@@ -1,0 +1,10 @@
+# Arquivos de dados gerados pelo app
+*.csv
+
+# Ambientes virtuais
+venv/
+.venv/
+
+# Arquivos do sistema
+__pycache__/
+.DS_Store
