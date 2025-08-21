@@ -13,7 +13,7 @@ st.set_page_config(
 st.title("📦 Sistema de Cadastro de Patrimônio")
 st.markdown("Aplicação para registrar novos itens, com armazenamento de dados no Google Sheets.")
 
-conn = st.connection("gspread", type=GSheetsConnection)
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
     existing_data = conn.read(worksheet="Página1", usecols=list(range(6)), ttl=5)
@@ -68,7 +68,7 @@ with st.form("cadastro_form", clear_on_submit=True):
                 
                 updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
 
-                conn.update(worksheet="Página1", data=updated_df)
+                conn.update(worksheet="cadastro", data=updated_df)
                 
                 st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
             else:
