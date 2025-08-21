@@ -24,7 +24,7 @@ def add_bg_from_local(image_file):
         background-size: cover
     }}
     [data-testid="stAppViewContainer"] > .main {{
-             background-color: rgba(255, 255, 255, 0.85); /* Fundo branco com 85% de opacidade */
+             background-color: rgba(255, 255, 255, 0.55); /* Fundo branco com 85% de opacidade */
              padding: 3rem;
              border-radius: 15px;
          }}
@@ -214,5 +214,6 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                 st.success(f"Item {tomb_edit} atualizado!"); st.session_state.edit_item_id = None; st.cache_data.clear(); st.rerun()
             else:
                 st.warning("O campo 'N° da Nota Fiscal' é obrigatório.")
+
 
 
