@@ -11,7 +11,6 @@ st.set_page_config(
 )
 
 st.title("📦 Sistema de Cadastro de Patrimônio")
-st.markdown("Aplicação para registrar novos itens, com armazenamento de dados no Google Sheets.")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -93,4 +92,5 @@ if not existing_data.empty:
         mime='text/csv',
     )
 else:
+
     st.info("Nenhum item cadastrado ainda.")
