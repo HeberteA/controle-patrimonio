@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
 import base64
 
 st.set_page_config(
@@ -32,15 +36,44 @@ def add_bg_from_local(image_file):
 
 add_bg_from_local('Lavie.png') 
 
-
 if 'edit_item_id' not in st.session_state:
     st.session_state.edit_item_id = None
 if 'confirm_delete' not in st.session_state:
     st.session_state.confirm_delete = False
 
-st.title("📦 Sistema de Cadastro de Patrimônio")
-st.markdown("Aplicação para registrar novos itens.")
+def upload_to_gdrive(file_data, file_name):
+    try:
+        scopes = ['https://www.googleapis.com/auth/drive']
+        creds = Credentials.from_service_account_info(
+            st.secrets["connections"]["gsheets"], scopes=scopes
+        )
+        service = build('drive', 'v3', credentials=creds)
+        
+        folder_id = st.secrets["connections"]["gsheets"]["gdrive_folder_id"]
+        
+        file_metadata = {
+            'name': file_name,
+            'parents': [folder_id]
+        }
+        
+        media = MediaIoBaseUpload(io.BytesIO(file_data), mimetype='application/pdf', resumable=True)
+        
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+        
+        file_id = file.get('id')
+        service.permissions().create(fileId=file_id, body={'type': 'anyone', 'role': 'reader'}).execute()
+        
+        return file.get('webViewLink')
 
+    except Exception as e:
+        st.error(f"Erro no upload para o Google Drive: {e}")
+        return None
+
+st.title("📦 Sistema de Cadastro de Patrimônio")
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=5)
@@ -52,7 +85,7 @@ def carregar_dados():
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
 
-        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(8)))
+        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(9)))
         patrimonio_df = patrimonio_df.dropna(how="all")
         
         if "N° de Tombamento" in patrimonio_df.columns:
@@ -63,8 +96,8 @@ def carregar_dados():
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {e}")
         return [], [], pd.DataFrame(columns=[
-            "Obra", "N° de Tombamento", "Nome", "Especificações", 
-            "Local de Uso / Responsável", "N° da Nota Fiscal", "Valor", "Status"
+            "Obra", "N° de Tombamento", "Nome", "Especificações", "Observações",
+            "Local de Uso / Responsável", "Nota Fiscal (Link)", "Valor", "Status"
         ])
 
 lista_obras, lista_status, existing_data = carregar_dados()
@@ -72,113 +105,102 @@ lista_obras, lista_status, existing_data = carregar_dados()
 def gerar_numero_tombamento(obra_selecionada):
     if obra_selecionada is None:
         return None
-
     itens_da_obra = existing_data[existing_data["Obra"] == obra_selecionada]
-
     if itens_da_obra.empty:
         return "1"
-
     numeros_numericos = pd.to_numeric(itens_da_obra["N° de Tombamento"], errors='coerce')
     numeros_existentes = numeros_numericos.dropna()
-
     if numeros_existentes.empty:
         return "1"
-
     ultimo_numero = int(numeros_existentes.max())
     proximo_numero = ultimo_numero + 1
-    
     if proximo_numero > 500:
-        return None 
-
+        return None
     return str(proximo_numero)
 
-
 st.header("Cadastrar Novo Item", divider='rainbow')
-
 if lista_obras and lista_status:
     col_form1, col_form2 = st.columns(2)
-    obra_selecionada_cadastro = col_form1.selectbox(
-        "Selecione a Obra para o novo item",
-        options=lista_obras,
-        index=None,
-        placeholder="Escolha a obra...",
-        key="sb_obra_cadastro"
-    )
-    status_selecionado = col_form2.selectbox(
-        "Status do Item",
-        options=lista_status,
-        index=0 
-    )
+    obra_selecionada_cadastro = col_form1.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
+    status_selecionado = col_form2.selectbox("Status do Item", options=lista_status, index=0)
 else:
-    st.warning("Verifique se as abas 'Obras' e 'Status' existem e estão preenchidas na planilha.")
+    st.warning("Verifique as abas 'Obras' e 'Status'.")
     obra_selecionada_cadastro = None
     status_selecionado = None
 
 with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        nome_produto = st.text_input("Nome do Produto", placeholder="Ex: Cadeira de Escritório")
-        num_nota_fiscal = st.text_input("N° da Nota Fiscal", placeholder="Ex: 001234")
+        nome_produto = st.text_input("Nome do Produto")
         valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
     with col2:
-        especificacoes = st.text_area("Especificações", placeholder="Ex: Cor preta, material de couro, giratória")
-        local_responsavel = st.text_input("Local de Uso / Responsável", placeholder="Ex: Sala de Reuniões / João Silva")
-
+        especificacoes = st.text_area("Especificações")
+        observacoes = st.text_area("Observações (Opcional)")
+        local_responsavel = st.text_input("Local de Uso / Responsável")
+    
     submitted = st.form_submit_button("✔️ Cadastrar Item")
 
     if submitted:
-        if obra_selecionada_cadastro and status_selecionado and nome_produto and local_responsavel and num_nota_fiscal:
+        if obra_selecionada_cadastro and nome_produto and uploaded_pdf is not None:
+            pdf_data = uploaded_pdf.getvalue()
+            pdf_name = uploaded_pdf.name
+            
             novo_tombamento = gerar_numero_tombamento(obra_selecionada_cadastro)
             
-            if novo_tombamento is not None:
-                novo_item_df = pd.DataFrame([{
-                    "Obra": obra_selecionada_cadastro,
-                    "N° de Tombamento": novo_tombamento,
-                    "Nome": nome_produto,
-                    "Especificações": especificacoes,
-                    "Local de Uso / Responsável": local_responsavel,
-                    "N° da Nota Fiscal": num_nota_fiscal,
-                    "Valor": valor_produto,
-                    "Status": status_selecionado
-                }])
-                
-                updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
-                conn.update(worksheet="Página1", data=updated_df)
-                
-                st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
-                st.cache_data.clear()
-                st.rerun()
+            if novo_tombamento:
+                st.info("Fazendo upload da nota fiscal para o Google Drive...")
+                link_nota_fiscal = upload_to_gdrive(pdf_data, f"NF_{novo_tombamento}_{obra_selecionada_cadastro.replace(' ', '_')}.pdf")
+
+                if link_nota_fiscal:
+                    novo_item_df = pd.DataFrame([{
+                        "Obra": obra_selecionada_cadastro,
+                        "N° de Tombamento": novo_tombamento,
+                        "Nome": nome_produto,
+                        "Especificações": especificacoes,
+                        "Observações": observacoes,
+                        "Local de Uso / Responsável": local_responsavel,
+                        "Nota Fiscal (Link)": link_nota_fiscal,
+                        "Valor": valor_produto,
+                        "Status": status_selecionado
+                    }])
+                    
+                    updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
+                    conn.update(worksheet="Página1", data=updated_df)
+                    
+                    st.success(f"Item '{nome_produto}' cadastrado com sucesso! Tombamento: {novo_tombamento}")
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error("Falha ao fazer upload da nota fiscal. O item não foi cadastrado.")
             else:
-                st.error(f"🚨 Limite de 500 itens atingido para a obra '{obra_selecionada_cadastro}'!")
+                st.error(f"Limite de 500 itens atingido para a obra '{obra_selecionada_cadastro}'!")
         else:
-            st.warning("⚠️ Por favor, selecione uma obra/status e preencha todos os campos obrigatórios.")
+            st.warning("⚠️ Por favor, preencha todos os campos obrigatórios e anexe o PDF da nota fiscal.")
 
 st.header("Itens Cadastrados", divider='rainbow')
-
 if not existing_data.empty:
     col_filtro1, col_filtro2 = st.columns(2)
-    obras_para_filtrar = ["Todas"] + sorted(existing_data["Obra"].unique().tolist())
-    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", options=obras_para_filtrar)
-
-    if "Status" in existing_data.columns:
-        status_para_filtrar = ["Todos"] + sorted(existing_data["Status"].unique().tolist())
-        filtro_status = col_filtro2.selectbox("Filtrar por Status", options=status_para_filtrar)
-    else:
-        filtro_status = "Todos"
-
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + lista_obras)
+    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + lista_status)
 
     dados_filtrados = existing_data
-    if filtro_obra != "Todas":
-        dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
-    if filtro_status != "Todos" and "Status" in dados_filtrados.columns:
-        dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
+    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
+    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
     
-    st.dataframe(dados_filtrados, use_container_width=True, hide_index=True)
-else:
-    st.info("Nenhum item cadastrado ainda.")
+    st.dataframe(
+        dados_filtrados,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Nota Fiscal (Link)": st.column_config.LinkColumn(
+                "Nota Fiscal",
+                display_text="🔗 Abrir PDF"
+            )
+        }
+    )
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
-
 if not existing_data.empty:
     lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", "N° de Tombamento"]).iterrows()]
     item_selecionado_gerenciar = st.selectbox(
@@ -202,7 +224,7 @@ if not existing_data.empty:
         if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
             st.session_state.confirm_delete = True
             st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-
+        
         if st.session_state.confirm_delete:
             tomb, obra = st.session_state.edit_item_id
             st.warning(f"**Atenção!** Você tem certeza que deseja remover o item **{tomb}** da obra **{obra}**? Esta ação não pode ser desfeita.")
@@ -229,9 +251,11 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         
         status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data["Status"]) if item_data["Status"] in lista_status else 0)
         nome_edit = st.text_input("Nome do Produto", value=item_data["Nome"])
-        especificacoes_edit = st.text_area("Especificações", value=item_data["Especificações"])
+        especificacoes_edit = st.text_area("Especificações", value=item_data.get("Especificações", ""))
+        observacoes_edit = st.text_area("Observações (Opcional)", value=item_data.get("Observações", ""))
         local_edit = st.text_input("Local de Uso / Responsável", value=item_data["Local de Uso / Responsável"])
-        nota_fiscal_edit = st.text_input("N° da Nota Fiscal", value=item_data["N° da Nota Fiscal"])
+        
+        st.markdown(f"**Nota Fiscal Atual:** [Abrir PDF]({item_data['Nota Fiscal (Link)']})")
         valor_edit = st.number_input("Valor (R$)", min_value=0.0, format="%.2f", value=float(item_data["Valor"]))
         
         submitted_edit = st.form_submit_button("💾 Salvar Alterações")
@@ -239,11 +263,12 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         if submitted_edit:
             condicao_update = (existing_data["N° de Tombamento"] == tomb_edit) & (existing_data["Obra"] == obra_edit_key)
             idx_to_update = existing_data.index[condicao_update].tolist()[0]
+            
             existing_data.loc[idx_to_update, "Status"] = status_edit
             existing_data.loc[idx_to_update, "Nome"] = nome_edit
             existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
+            existing_data.loc[idx_to_update, "Observações"] = observacoes_edit
             existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
-            existing_data.loc[idx_to_update, "N° da Nota Fiscal"] = nota_fiscal_edit
             existing_data.loc[idx_to_update, "Valor"] = valor_edit
             
             conn.update(worksheet="Página1", data=existing_data)
