@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import random
 from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(
@@ -8,6 +7,21 @@ st.set_page_config(
     page_icon="📦",
     layout="wide"
 )
+
+def add_bg_from_url():
+    st.markdown(
+         f"""
+         <style>
+         .stApp {{
+             background-image: url("https://drive.google.com/file/d/1zxqbFbVbmPnrNIhtRxpOxNwckf5n2u68/view");
+             background-attachment: fixed;
+             background-size: cover;
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
+
 
 if 'edit_item_id' not in st.session_state:
     st.session_state.edit_item_id = None
@@ -45,19 +59,29 @@ def carregar_dados():
 
 lista_obras, lista_status, existing_data = carregar_dados()
 
-def gerar_numero_tombamento():
-    if "N° de Tombamento" not in existing_data.columns or existing_data.empty:
+def gerar_numero_tombamento(obra_selecionada):
+    if obra_selecionada is None:
+        return None
+
+    itens_da_obra = existing_data[existing_data["Obra"] == obra_selecionada]
+
+    if itens_da_obra.empty:
         return "1"
-    
-    numeros_numericos = pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')
+
+    numeros_numericos = pd.to_numeric(itens_da_obra["N° de Tombamento"], errors='coerce')
     numeros_existentes = numeros_numericos.dropna()
 
     if numeros_existentes.empty:
         return "1"
-    
+
     ultimo_numero = int(numeros_existentes.max())
     proximo_numero = ultimo_numero + 1
+    
+    if proximo_numero > 500:
+        return None 
+
     return str(proximo_numero)
+
 
 st.header("Cadastrar Novo Item", divider='rainbow')
 
@@ -94,25 +118,28 @@ with st.form("cadastro_form", clear_on_submit=True):
 
     if submitted:
         if obra_selecionada_cadastro and status_selecionado and nome_produto and local_responsavel and num_nota_fiscal:
-            novo_tombamento = gerar_numero_tombamento()
+            novo_tombamento = gerar_numero_tombamento(obra_selecionada_cadastro)
             
-            novo_item_df = pd.DataFrame([{
-                "Obra": obra_selecionada_cadastro,
-                "N° de Tombamento": novo_tombamento,
-                "Nome": nome_produto,
-                "Especificações": especificacoes,
-                "Local de Uso / Responsável": local_responsavel,
-                "N° da Nota Fiscal": num_nota_fiscal,
-                "Valor": valor_produto,
-                "Status": status_selecionado
-            }])
-            
-            updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
-            conn.update(worksheet="Página1", data=updated_df)
-            
-            st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
-            st.cache_data.clear()
-            st.rerun()
+            if novo_tombamento is not None:
+                novo_item_df = pd.DataFrame([{
+                    "Obra": obra_selecionada_cadastro,
+                    "N° de Tombamento": novo_tombamento,
+                    "Nome": nome_produto,
+                    "Especificações": especificacoes,
+                    "Local de Uso / Responsável": local_responsavel,
+                    "N° da Nota Fiscal": num_nota_fiscal,
+                    "Valor": valor_produto,
+                    "Status": status_selecionado
+                }])
+                
+                updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
+                conn.update(worksheet="Página1", data=updated_df)
+                
+                st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error(f"🚨 Limite de 500 itens atingido para a obra '{obra_selecionada_cadastro}'!")
         else:
             st.warning("⚠️ Por favor, selecione uma obra/status e preencha todos os campos obrigatórios.")
 
@@ -123,13 +150,17 @@ if not existing_data.empty:
     obras_para_filtrar = ["Todas"] + sorted(existing_data["Obra"].unique().tolist())
     filtro_obra = col_filtro1.selectbox("Filtrar por Obra", options=obras_para_filtrar)
 
-    status_para_filtrar = ["Todos"] + sorted(existing_data["Status"].unique().tolist())
-    filtro_status = col_filtro2.selectbox("Filtrar por Status", options=status_para_filtrar)
+    if "Status" in existing_data.columns:
+        status_para_filtrar = ["Todos"] + sorted(existing_data["Status"].unique().tolist())
+        filtro_status = col_filtro2.selectbox("Filtrar por Status", options=status_para_filtrar)
+    else:
+        filtro_status = "Todos"
+
 
     dados_filtrados = existing_data
     if filtro_obra != "Todas":
         dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
-    if filtro_status != "Todos":
+    if filtro_status != "Todos" and "Status" in dados_filtrados.columns:
         dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
     
     st.dataframe(dados_filtrados, use_container_width=True, hide_index=True)
@@ -139,7 +170,7 @@ else:
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
 if not existing_data.empty:
-    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']}" for index, row in existing_data.iterrows()]
+    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", "N° de Tombamento"]).iterrows()]
     item_selecionado_gerenciar = st.selectbox(
         "Selecione um item para Editar ou Remover",
         options=lista_itens,
@@ -149,36 +180,43 @@ if not existing_data.empty:
 
     if item_selecionado_gerenciar:
         tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
+        obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
         
         col_edit, col_delete = st.columns(2)
 
         if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-            st.session_state.edit_item_id = tombamento_selecionado
+            st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
             st.session_state.confirm_delete = False
             st.rerun()
 
         if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
             st.session_state.confirm_delete = True
-            st.session_state.edit_item_id = tombamento_selecionado
+            st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
 
         if st.session_state.confirm_delete:
-            st.warning(f"**Atenção!** Você tem certeza que deseja remover o item **{st.session_state.edit_item_id}**? Esta ação não pode ser desfeita.")
+            tomb, obra = st.session_state.edit_item_id
+            st.warning(f"**Atenção!** Você tem certeza que deseja remover o item **{tomb}** da obra **{obra}**? Esta ação não pode ser desfeita.")
             if st.button("Sim, tenho certeza e quero remover"):
-                df_sem_item = existing_data[existing_data["N° de Tombamento"] != st.session_state.edit_item_id]
+                condicao = ~((existing_data["N° de Tombamento"] == tomb) & (existing_data["Obra"] == obra))
+                df_sem_item = existing_data[condicao]
+                
                 conn.update(worksheet="Página1", data=df_sem_item)
-                st.success(f"Item {st.session_state.edit_item_id} removido com sucesso!")
+                st.success(f"Item {tomb} da obra {obra} removido com sucesso!")
+                
                 st.session_state.confirm_delete = False
                 st.session_state.edit_item_id = None
                 st.cache_data.clear()
                 st.rerun()
 
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
-    st.subheader(f"Editando Item: {st.session_state.edit_item_id}")
+    tomb_edit, obra_edit_key = st.session_state.edit_item_id
+    st.subheader(f"Editando Item: {tomb_edit} (Obra: {obra_edit_key})")
 
-    item_data = existing_data[existing_data["N° de Tombamento"] == st.session_state.edit_item_id].iloc[0]
+    item_data = existing_data[(existing_data["N° de Tombamento"] == tomb_edit) & (existing_data["Obra"] == obra_edit_key)].iloc[0]
 
     with st.form("edit_form"):
-        obra_edit = st.selectbox("Obra", options=lista_obras, index=lista_obras.index(item_data["Obra"]))
+        st.info(f"Obra: **{item_data['Obra']}** (não pode ser alterada)")
+        
         status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data["Status"]) if item_data["Status"] in lista_status else 0)
         nome_edit = st.text_input("Nome do Produto", value=item_data["Nome"])
         especificacoes_edit = st.text_area("Especificações", value=item_data["Especificações"])
@@ -189,9 +227,8 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         submitted_edit = st.form_submit_button("💾 Salvar Alterações")
 
         if submitted_edit:
-            idx_to_update = existing_data.index[existing_data["N° de Tombamento"] == st.session_state.edit_item_id].tolist()[0]
-            
-            existing_data.loc[idx_to_update, "Obra"] = obra_edit
+            condicao_update = (existing_data["N° de Tombamento"] == tomb_edit) & (existing_data["Obra"] == obra_edit_key)
+            idx_to_update = existing_data.index[condicao_update].tolist()[0]
             existing_data.loc[idx_to_update, "Status"] = status_edit
             existing_data.loc[idx_to_update, "Nome"] = nome_edit
             existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
@@ -201,7 +238,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
             
             conn.update(worksheet="Página1", data=existing_data)
             
-            st.success(f"Item {st.session_state.edit_item_id} atualizado com sucesso!")
+            st.success(f"Item {tomb_edit} atualizado com sucesso!")
             
             st.session_state.edit_item_id = None
             st.cache_data.clear()
