@@ -45,8 +45,9 @@ lista_obras, existing_data = carregar_dados()
 def gerar_numero_tombamento():
     if "N° de Tombamento" not in existing_data.columns or existing_data.empty:
         return str(random.randint(1, 500))
-        
-    numeros_existentes = existing_data["N° de Tombamento"].dropna().astype(int).tolist()
+    numeros_numericos = pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')
+    
+    numeros_existentes = numeros_numericos.dropna().astype(int).tolist()
     
     if len(numeros_existentes) >= 500:
         return None
@@ -193,4 +194,5 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
             
             st.session_state.edit_item_id = None
             st.cache_data.clear()
+
             st.rerun()
