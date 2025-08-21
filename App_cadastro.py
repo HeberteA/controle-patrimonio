@@ -15,7 +15,7 @@ if 'confirm_delete' not in st.session_state:
     st.session_state.confirm_delete = False
 
 st.title("📦 Sistema de Cadastro de Patrimônio")
-st.markdown("Aplicação para registrar novos itens.")
+st.markdown("Aplicação para registrar novos itens, com armazenamento de dados no Google Sheets.")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -25,52 +25,60 @@ def carregar_dados():
         obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
 
-        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(7)))
+        status_df = conn.read(worksheet="Status", usecols=[0], header=0)
+        lista_status = status_df["Nome do Status"].dropna().tolist()
+
+        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(8)))
         patrimonio_df = patrimonio_df.dropna(how="all")
         
         if "N° de Tombamento" in patrimonio_df.columns:
             patrimonio_df["N° de Tombamento"] = patrimonio_df["N° de Tombamento"].astype(str)
 
-        return lista_obras, patrimonio_df
+        return lista_obras, lista_status, patrimonio_df
 
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {e}")
-        return [], pd.DataFrame(columns=[
+        return [], [], pd.DataFrame(columns=[
             "Obra", "N° de Tombamento", "Nome", "Especificações", 
-            "Local de Uso / Responsável", "N° da Nota Fiscal", "Valor"
+            "Local de Uso / Responsável", "N° da Nota Fiscal", "Valor", "Status"
         ])
 
-lista_obras, existing_data = carregar_dados()
+lista_obras, lista_status, existing_data = carregar_dados()
 
 def gerar_numero_tombamento():
     if "N° de Tombamento" not in existing_data.columns or existing_data.empty:
-        return str(random.randint(1, 500))
+        return "1"
+    
     numeros_numericos = pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')
-    
-    numeros_existentes = numeros_numericos.dropna().astype(int).tolist()
-    
-    if len(numeros_existentes) >= 500:
-        return None
+    numeros_existentes = numeros_numericos.dropna()
 
-    numero_gerado = random.randint(1, 500)
-    while numero_gerado in numeros_existentes:
-        numero_gerado = random.randint(1, 500)
+    if numeros_existentes.empty:
+        return "1"
     
-    return str(numero_gerado)
+    ultimo_numero = int(numeros_existentes.max())
+    proximo_numero = ultimo_numero + 1
+    return str(proximo_numero)
 
 st.header("Cadastrar Novo Item", divider='rainbow')
 
-if lista_obras:
-    obra_selecionada_cadastro = st.selectbox(
+if lista_obras and lista_status:
+    col_form1, col_form2 = st.columns(2)
+    obra_selecionada_cadastro = col_form1.selectbox(
         "Selecione a Obra para o novo item",
         options=lista_obras,
         index=None,
-        placeholder="Escolha a obra para cadastrar o item",
+        placeholder="Escolha a obra...",
         key="sb_obra_cadastro"
     )
+    status_selecionado = col_form2.selectbox(
+        "Status do Item",
+        options=lista_status,
+        index=0 
+    )
 else:
-    st.warning("Nenhuma obra encontrada na planilha. Verifique a aba 'Obras'.")
+    st.warning("Verifique se as abas 'Obras' e 'Status' existem e estão preenchidas na planilha.")
     obra_selecionada_cadastro = None
+    status_selecionado = None
 
 with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
@@ -85,44 +93,46 @@ with st.form("cadastro_form", clear_on_submit=True):
     submitted = st.form_submit_button("✔️ Cadastrar Item")
 
     if submitted:
-        if obra_selecionada_cadastro and nome_produto and local_responsavel and num_nota_fiscal:
+        if obra_selecionada_cadastro and status_selecionado and nome_produto and local_responsavel and num_nota_fiscal:
             novo_tombamento = gerar_numero_tombamento()
             
-            if novo_tombamento is not None:
-                novo_item_df = pd.DataFrame([{
-                    "Obra": obra_selecionada_cadastro,
-                    "N° de Tombamento": novo_tombamento,
-                    "Nome": nome_produto,
-                    "Especificações": especificacoes,
-                    "Local de Uso / Responsável": local_responsavel,
-                    "N° da Nota Fiscal": num_nota_fiscal,
-                    "Valor": valor_produto
-                }])
-                
-                updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
-                conn.update(worksheet="Página1", data=updated_df)
-                
-                st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
-                st.cache_data.clear()
-                st.rerun()
-            else:
-                st.error("🚨 Todos os números de tombamento (1-500) já foram utilizados!")
+            novo_item_df = pd.DataFrame([{
+                "Obra": obra_selecionada_cadastro,
+                "N° de Tombamento": novo_tombamento,
+                "Nome": nome_produto,
+                "Especificações": especificacoes,
+                "Local de Uso / Responsável": local_responsavel,
+                "N° da Nota Fiscal": num_nota_fiscal,
+                "Valor": valor_produto,
+                "Status": status_selecionado
+            }])
+            
+            updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
+            conn.update(worksheet="Página1", data=updated_df)
+            
+            st.success(f"✅ Item '{nome_produto}' cadastrado com sucesso! Tombamento: **{novo_tombamento}**")
+            st.cache_data.clear()
+            st.rerun()
         else:
-            st.warning("⚠️ Por favor, selecione uma obra e preencha todos os campos obrigatórios.")
+            st.warning("⚠️ Por favor, selecione uma obra/status e preencha todos os campos obrigatórios.")
 
 st.header("Itens Cadastrados", divider='rainbow')
 
 if not existing_data.empty:
+    col_filtro1, col_filtro2 = st.columns(2)
     obras_para_filtrar = ["Todas"] + sorted(existing_data["Obra"].unique().tolist())
-    filtro_obra = st.selectbox("Filtrar por Obra", options=obras_para_filtrar)
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", options=obras_para_filtrar)
 
-    if filtro_obra == "Todas":
-        dados_filtrados = existing_data
-    else:
-        dados_filtrados = existing_data[existing_data["Obra"] == filtro_obra]
+    status_para_filtrar = ["Todos"] + sorted(existing_data["Status"].unique().tolist())
+    filtro_status = col_filtro2.selectbox("Filtrar por Status", options=status_para_filtrar)
+
+    dados_filtrados = existing_data
+    if filtro_obra != "Todas":
+        dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
+    if filtro_status != "Todos":
+        dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
     
     st.dataframe(dados_filtrados, use_container_width=True, hide_index=True)
-    
 else:
     st.info("Nenhum item cadastrado ainda.")
 
@@ -130,7 +140,6 @@ st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
 if not existing_data.empty:
     lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']}" for index, row in existing_data.iterrows()]
-    
     item_selecionado_gerenciar = st.selectbox(
         "Selecione um item para Editar ou Remover",
         options=lista_itens,
@@ -170,6 +179,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
 
     with st.form("edit_form"):
         obra_edit = st.selectbox("Obra", options=lista_obras, index=lista_obras.index(item_data["Obra"]))
+        status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data["Status"]) if item_data["Status"] in lista_status else 0)
         nome_edit = st.text_input("Nome do Produto", value=item_data["Nome"])
         especificacoes_edit = st.text_area("Especificações", value=item_data["Especificações"])
         local_edit = st.text_input("Local de Uso / Responsável", value=item_data["Local de Uso / Responsável"])
@@ -182,6 +192,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
             idx_to_update = existing_data.index[existing_data["N° de Tombamento"] == st.session_state.edit_item_id].tolist()[0]
             
             existing_data.loc[idx_to_update, "Obra"] = obra_edit
+            existing_data.loc[idx_to_update, "Status"] = status_edit
             existing_data.loc[idx_to_update, "Nome"] = nome_edit
             existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
             existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
@@ -194,5 +205,4 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
             
             st.session_state.edit_item_id = None
             st.cache_data.clear()
-
             st.rerun()
