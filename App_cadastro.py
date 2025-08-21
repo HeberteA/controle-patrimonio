@@ -5,6 +5,7 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
+import base64
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
@@ -211,3 +212,4 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                 st.success(f"Item {tomb_edit} atualizado!"); st.session_state.edit_item_id = None; st.cache_data.clear(); st.rerun()
             else:
                 st.warning("O campo 'N° da Nota Fiscal' é obrigatório.")
+
