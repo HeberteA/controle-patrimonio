@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
+import base64
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
@@ -8,19 +9,28 @@ st.set_page_config(
     layout="wide"
 )
 
-def add_bg_from_url():
+def add_bg_from_local(image_file):
+    with open(image_file, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
     st.markdown(
-         f"""
-         <style>
-         .stApp {{
-             background-image: url("https://drive.google.com/file/d/1zxqbFbVbmPnrNIhtRxpOxNwckf5n2u68/view");
-             background-attachment: fixed;
-             background-size: cover;
+    f"""
+    <style>
+    .stApp {{
+        background-image: url(data:image/{"png"};base64,{encoded_string.decode()});
+        background-attachment: fixed;
+        background-size: cover
+    }}
+    [data-testid="stAppViewContainer"] > .main {{
+             background-color: rgba(255, 255, 255, 0.85); /* Fundo branco com 85% de opacidade */
+             padding: 3rem;
+             border-radius: 15px;
          }}
-         </style>
-         """,
-         unsafe_allow_html=True
-     )
+    </style>
+    """,
+    unsafe_allow_html=True
+    )
+
+add_bg_from_local('Lavie.png') 
 
 
 if 'edit_item_id' not in st.session_state:
@@ -29,7 +39,7 @@ if 'confirm_delete' not in st.session_state:
     st.session_state.confirm_delete = False
 
 st.title("📦 Sistema de Cadastro de Patrimônio")
-st.markdown("Aplicação para registrar novos itens, com armazenamento de dados no Google Sheets.")
+st.markdown("Aplicação para registrar novos itens.")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
