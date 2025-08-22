@@ -6,12 +6,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
 
-st.set_page_config(
-    page_title="Cadastro de Patrimônio",
-    page_icon="📦",
-    layout="wide"
-)
-
 @st.cache_data
 def get_img_as_base64(file):
     with open(file, "rb") as f:
@@ -40,6 +34,12 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True
+)
+
+st.set_page_config(
+    page_title="Cadastro de Patrimônio",
+    page_icon="Lavie.png",
+    layout="wide"
 )
 
 if 'edit_item_id' not in st.session_state:
@@ -290,6 +290,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
