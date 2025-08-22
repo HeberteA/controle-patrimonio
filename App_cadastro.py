@@ -7,45 +7,17 @@ from googleapiclient.http import MediaIoBaseUpload
 import io
 import base64
 
-@st.cache_data
-def get_img_as_base64(file):
-    with open(file, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-    
-caminho_imagem = "Lavie.png" 
-img_base64 = get_img_as_base64(caminho_imagem)
-tipo_imagem = "image/png" if caminho_imagem.lower().endswith(".png") or caminho_imagem.lower().endswith(".png") else "image/png"
-
-st.markdown(
-    f"""
-    <style>
-    [data-testid="stBlockContainer"]:first-child {{
-        background-image: url("data:{tipo_imagem};base64,{img_base64}");
-        background-size: cover;
-        background-position: center;
-        border-radius: 10px;
-        padding: 2rem;
-    }}
-    
-    [data-testid="stBlockContainer"]:first-child h1,
-    [data-testid="stBlockContainer"]:first-child p {{
-        color: white;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
     page_icon="Lavie.png",
     layout="wide"
 )
 
-if 'edit_item_id' not in st.session_state:
-    st.session_state.edit_item_id = None
-if 'confirm_delete' not in st.session_state:
-    st.session_state.confirm_delete = False
+@st.cache_data
+def get_img_as_base64(file):
+    with open(file, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
 OBRA_COL = "Obra"
 TOMBAMENTO_COL = "N° de Tombamento"
@@ -57,6 +29,11 @@ ESPEC_COL = "Especificações"
 OBS_COL = "Observações"
 LOCAL_COL = "Local de Uso / Responsável"
 VALOR_COL = "Valor"
+
+COLUNAS_PATRIMONIO = [
+    OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL,
+    NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL
+]
 
 def upload_to_gdrive(file_data, file_name):
     try:
@@ -74,27 +51,61 @@ def upload_to_gdrive(file_data, file_name):
         st.error(f"Erro no upload para o Google Drive: {e}")
         return None
 
-st.title("📦 Sistema de Cadastro de Patrimônio")
-
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 @st.cache_data(ttl=5)
 def carregar_dados():
     try:
         obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
+        
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
         
         patrimonio_df = conn.read(worksheet="Página1")
-        patrimonio_df = patrimonio_df.dropna(how="all")
-        if not patrimonio_df.empty:
+        
+        if patrimonio_df.empty:
+            patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
+        else:
+            patrimonio_df = patrimonio_df.dropna(how="all")
             patrimonio_df.columns = patrimonio_df.columns.str.strip()
             
         return lista_obras, lista_status, patrimonio_df
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {e}")
-        return [], [], pd.DataFrame()
+        return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO)
+
+try:
+    caminho_imagem = "Lavie.png"
+    img_base64 = get_img_as_base64(caminho_imagem)
+    tipo_imagem = "image/png"
+    st.markdown(
+        f"""
+        <style>
+        [data-testid="stBlockContainer"]:first-child {{
+            background-image: url("data:{tipo_imagem};base64,{img_base64}");
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            padding: 2rem;
+        }}
+        [data-testid="stBlockContainer"]:first-child h1,
+        [data-testid="stBlockContainer"]:first-child p {{
+            color: white;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+except FileNotFoundError:
+    st.warning("Arquivo 'Lavie.png' não encontrado. O cabeçalho não terá imagem de fundo.")
+
+if 'edit_item_id' not in st.session_state:
+    st.session_state.edit_item_id = None
+if 'confirm_delete' not in st.session_state:
+    st.session_state.confirm_delete = False
+
+st.title("📦 Sistema de Cadastro de Patrimônio")
+
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 lista_obras, lista_status, existing_data = carregar_dados()
 
@@ -117,7 +128,7 @@ if lista_obras and lista_status:
     obra_selecionada_cadastro = col_form1.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
     status_selecionado = col_form2.selectbox("Status do Item", options=lista_status, index=0)
 else:
-    st.warning("Verifique se as abas 'Obras' e 'Status' estão preenchidas.")
+    st.warning("Verifique se as abas 'Obras' e 'Status' estão preenchidas para cadastrar um item.")
     obra_selecionada_cadastro = None
     status_selecionado = None
 
@@ -125,7 +136,7 @@ with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
         nome_produto = st.text_input("Nome do Produto")
-        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional)")
+        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixa em branco para automático)")
         num_nota_fiscal = st.text_input("N° da Nota Fiscal")
         valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
     with col2:
@@ -137,9 +148,7 @@ with st.form("cadastro_form", clear_on_submit=True):
     submitted = st.form_submit_button("✔️ Cadastrar Item")
 
     if submitted:
-        if existing_data.empty:
-            st.error("Não é possível adicionar um item pois a planilha está vazia ou não foi carregada.")
-        elif obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
+        if obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
             num_tombamento_final = ""
             is_valid = False
 
@@ -200,7 +209,7 @@ if not existing_data.empty:
         temp_col_name = '_tombamento_numeric'
         df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
         sorted_data = df_to_sort.sort_values(
-             by=[OBRA_COL, temp_col_name]
+            by=[OBRA_COL, temp_col_name]
         )
         sorted_data = sorted_data.drop(columns=[temp_col_name])
         lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (Obra: {row[OBRA_COL]})" for index, row in sorted_data.iterrows()]
@@ -240,6 +249,7 @@ if not existing_data.empty:
                     st.session_state.confirm_delete = False
                     st.session_state.edit_item_id = None
                     st.rerun()
+
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
     item_data_list = existing_data[(existing_data[TOMBAMENTO_COL] == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
@@ -290,6 +300,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
