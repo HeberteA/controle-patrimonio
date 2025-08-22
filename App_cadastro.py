@@ -44,7 +44,7 @@ def carregar_dados():
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
-        patrimonio_df = conn.read(worksheet="cadastro", usecols=list(range(10)))
+        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(10)))
         patrimonio_df = patrimonio_df.dropna(how="all")
         if "N° de Tombamento" in patrimonio_df.columns:
             patrimonio_df["N° de Tombamento"] = patrimonio_df["N° de Tombamento"].astype(str)
@@ -243,6 +243,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
