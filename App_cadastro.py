@@ -44,7 +44,7 @@ def carregar_dados():
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
-        patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(10)))
+        patrimonio_df = conn.read(worksheet="cadastro", usecols=list(range(10)))
         patrimonio_df = patrimonio_df.dropna(how="all")
         if "N° de Tombamento" in patrimonio_df.columns:
             patrimonio_df["N° de Tombamento"] = patrimonio_df["N° de Tombamento"].astype(str)
@@ -83,8 +83,8 @@ with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
         nome_produto = st.text_input("Nome do Produto")
-        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixe em branco para gerar automaticamente)")
-        num_nota_fiscal = st.text_input("**N° da Nota Fiscal (Obrigatório)**")
+        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional)")
+        num_nota_fiscal = st.text_input("N° da Nota Fiscal")
         valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
     with col2:
         especificacoes = st.text_area("Especificações")
@@ -149,11 +149,9 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-    # Verificação de segurança para garantir que as colunas necessárias existem
     required_cols = ["Obra", "N° de Tombamento", "Nome"]
     if all(col in existing_data.columns for col in required_cols):
-        
-        # Ordena os valores de forma segura
+
         sorted_data = existing_data.sort_values(
             by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]
         )
@@ -245,6 +243,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
