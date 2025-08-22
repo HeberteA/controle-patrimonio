@@ -136,8 +136,8 @@ with st.form("cadastro_form", clear_on_submit=True):
 st.header("Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
     col_filtro1, col_filtro2 = st.columns(2)
-    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[].unique())))
-    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data[STATUS_COL].unique())))
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data["Obra"].unique())))
+    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data["Status"].unique())))
 
     dados_filtrados = existing_data
     if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
@@ -219,6 +219,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
