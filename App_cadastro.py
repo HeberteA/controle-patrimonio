@@ -220,10 +220,10 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         with st.form("edit_form"):
             st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
             
-            tomb_edit_novo = st.text_input(f"**{TOMBAMENTO_COL} (Obrigatório)**", value=item_data.get(TOMBAMENTO_COL, ""))
+            tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL} ", value=item_data.get(TOMBAMENTO_COL, ""))
             status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data.get(STATUS_COL)) if item_data.get(STATUS_COL) in lista_status else 0)
             nome_edit = st.text_input(NOME_COL, value=item_data.get(NOME_COL, ""))
-            num_nota_fiscal_edit = st.text_input(f"**{NF_NUM_COL} (Obrigatório)**", value=item_data.get(NF_NUM_COL, ""))
+            num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL} ", value=item_data.get(NF_NUM_COL, ""))
             especificacoes_edit = st.text_area(ESPEC_COL, value=item_data.get(ESPEC_COL, ""))
             observacoes_edit = st.text_area(OBS_COL, value=item_data.get(OBS_COL, ""))
             local_edit = st.text_input(LOCAL_COL, value=item_data.get(LOCAL_COL, ""))
@@ -260,6 +260,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
