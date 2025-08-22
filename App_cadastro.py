@@ -185,7 +185,7 @@ if not existing_data.empty:
                 tomb, obra = st.session_state.edit_item_id
                 st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
                 if st.button("Sim, tenho certeza e quero remover"):
-                    condicao = ~((existing_data["N° de Tombamento"] == tomb) & (existing_data["Obra"] == obra))
+                    condicao = ~((existing_data["Obra"] == obra) & (existing_data["N° de Tombamento"] == tomb))
                     df_sem_item = existing_data[condicao]
                     conn.update(worksheet="Página1", data=df_sem_item)
                     st.success(f"Item {tomb} da obra {obra} removido!")
@@ -246,6 +246,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
