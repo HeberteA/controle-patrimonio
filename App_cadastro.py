@@ -57,7 +57,12 @@ def carregar_dados():
         ])
 
 lista_obras, lista_status, existing_data = carregar_dados()
-
+st.subheader("Diagnóstico de Dados Carregados")
+st.write("Abaixo estão os nomes das colunas exatamente como o Python os leu da planilha:")
+st.write(existing_data.columns.tolist())
+st.write("E aqui estão as primeiras linhas da tabela carregada:")
+st.dataframe(existing_data.head()
+             
 def gerar_numero_tombamento_sequencial(obra_selecionada):
     if obra_selecionada is None: return None
     itens_da_obra = existing_data[existing_data["Obra"] == obra_selecionada]
@@ -246,6 +251,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
