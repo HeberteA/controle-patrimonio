@@ -171,10 +171,8 @@ if not existing_data.empty:
         df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
         sorted_data = df_to_sort.sort_values(
              by=[OBRA_COL, temp_col_name]
-         )
-
-# 3. (Opcional) Remova a coluna temporária se não precisar mais dela
-sorted_data = sorted_data.drop(columns=[temp_col_name])
+        )
+        sorted_data = sorted_data.drop(columns=[temp_col_name])
         lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (Obra: {row[OBRA_COL]})" for index, row in sorted_data.iterrows()]
         
         item_selecionado_gerenciar = st.selectbox(
@@ -262,6 +260,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
