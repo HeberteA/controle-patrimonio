@@ -8,3 +8,4 @@ venv/
 # Arquivos do sistema
 __pycache__/
 .DS_Store
+.streamlit
