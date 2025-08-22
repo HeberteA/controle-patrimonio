@@ -58,6 +58,17 @@ def carregar_dados():
 
 lista_obras, lista_status, existing_data = carregar_dados()
 
+def gerar_numero_tombamento_sequencial(obra_selecionada):
+    if obra_selecionada is None: return None
+    itens_da_obra = existing_data[existing_data["Obra"] == obra_selecionada]
+    if itens_da_obra.empty: return "1"
+    numeros_numericos = pd.to_numeric(itens_da_obra["N° de Tombamento"], errors='coerce')
+    numeros_existentes = numeros_numericos.dropna()
+    if numeros_existentes.empty: return "1"
+    ultimo_numero = int(numeros_existentes.max())
+    proximo_numero = ultimo_numero + 1
+    return str(proximo_numero)
+
 st.header("Cadastrar Novo Item", divider='rainbow')
 if lista_obras and lista_status:
     col_form1, col_form2 = st.columns(2)
@@ -72,7 +83,7 @@ with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
         nome_produto = st.text_input("Nome do Produto")
-        num_tombamento = st.text_input("**N° de Tombamento (Obrigatório)**")
+        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixe em branco para gerar automaticamente)")
         num_nota_fiscal = st.text_input("**N° da Nota Fiscal (Obrigatório)**")
         valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
     with col2:
@@ -84,22 +95,30 @@ with st.form("cadastro_form", clear_on_submit=True):
     submitted = st.form_submit_button("✔️ Cadastrar Item")
 
     if submitted:
-        if obra_selecionada_cadastro and nome_produto and num_nota_fiscal and num_tombamento:
-            # Validação: Checar se o número de tombamento já existe para a obra selecionada
-            condicao = (existing_data['Obra'] == obra_selecionada_cadastro) & (existing_data['N° de Tombamento'] == num_tombamento)
-            if not existing_data[condicao].empty:
-                st.error(f"Erro: O N° de Tombamento '{num_tombamento}' já existe para a obra '{obra_selecionada_cadastro}'. Por favor, escolha outro número.")
+        if obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
+            num_tombamento_final = ""
+            is_valid = False
+
+            if num_tombamento_manual:
+                condicao = (existing_data['Obra'] == obra_selecionada_cadastro) & (existing_data['N° de Tombamento'] == num_tombamento_manual)
+                if not existing_data[condicao].empty:
+                    st.error(f"Erro: O N° de Tombamento '{num_tombamento_manual}' já existe para esta obra.")
+                else:
+                    num_tombamento_final = num_tombamento_manual
+                    is_valid = True
             else:
+                num_tombamento_final = gerar_numero_tombamento_sequencial(obra_selecionada_cadastro)
+                is_valid = True
+            
+            if is_valid:
                 link_nota_fiscal = ""
                 if uploaded_pdf is not None:
                     pdf_data = uploaded_pdf.getvalue()
                     st.info("Fazendo upload da nota fiscal...")
-                    link_nota_fiscal = upload_to_gdrive(pdf_data, f"NF_{num_tombamento}_{obra_selecionada_cadastro.replace(' ', '_')}.pdf")
-                    if not link_nota_fiscal:
-                        st.error("Falha ao fazer upload do PDF. O item será salvo sem o link.")
+                    link_nota_fiscal = upload_to_gdrive(pdf_data, f"NF_{num_tombamento_final}_{obra_selecionada_cadastro.replace(' ', '_')}.pdf")
                 
                 novo_item_df = pd.DataFrame([{
-                    "Obra": obra_selecionada_cadastro, "N° de Tombamento": num_tombamento,
+                    "Obra": obra_selecionada_cadastro, "N° de Tombamento": num_tombamento_final,
                     "Nome": nome_produto, "Especificações": especificacoes, "Observações": observacoes,
                     "Local de Uso / Responsável": local_responsavel,
                     "N° da Nota Fiscal": num_nota_fiscal, "Nota Fiscal (Link)": link_nota_fiscal,
@@ -108,11 +127,11 @@ with st.form("cadastro_form", clear_on_submit=True):
                 
                 updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
                 conn.update(worksheet="Página1", data=updated_df)
-                st.success(f"Item '{nome_produto}' cadastrado com sucesso! Tombamento: {num_tombamento}")
+                st.success(f"Item '{nome_produto}' cadastrado! Tombamento: {num_tombamento_final}")
                 st.cache_data.clear()
                 st.rerun()
         else:
-            st.warning("⚠️ Preencha todos os campos obrigatórios (Obra, Nome, N° de Tombamento, N° da Nota Fiscal).")
+            st.warning("⚠️ Preencha os campos obrigatórios (Obra, Nome, N° da Nota Fiscal).")
 
 st.header("Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
@@ -130,7 +149,7 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"])]).iterrows()]
+    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]).iterrows()]
     item_selecionado_gerenciar = st.selectbox("Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item...")
 
     if item_selecionado_gerenciar:
@@ -182,7 +201,6 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         submitted_edit = st.form_submit_button("💾 Salvar Alterações")
         if submitted_edit:
             if num_nota_fiscal_edit and tomb_edit_novo:
-                # Validação: Checar se o NOVO número de tombamento já existe em OUTRO item da mesma obra
                 condicao_outro_item = (existing_data['Obra'] == obra_edit_key) & \
                                       (existing_data['N° de Tombamento'] == tomb_edit_novo) & \
                                       (existing_data['N° de Tombamento'] != tomb_edit_original)
@@ -209,6 +227,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
