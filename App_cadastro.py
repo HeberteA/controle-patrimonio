@@ -149,9 +149,11 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
+    # Verificação de segurança para garantir que as colunas necessárias existem
     required_cols = ["Obra", "N° de Tombamento", "Nome"]
     if all(col in existing_data.columns for col in required_cols):
         
+        # Ordena os valores de forma segura
         sorted_data = existing_data.sort_values(
             by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]
         )
@@ -192,6 +194,7 @@ if not existing_data.empty:
                     st.rerun()
     else:
         st.error("⚠️ Erro de configuração: Verifique se as colunas 'Obra', 'N° de Tombamento' e 'Nome' existem na sua planilha 'Página1'.")
+        
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
     st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
@@ -242,6 +245,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
