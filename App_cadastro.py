@@ -57,20 +57,6 @@ def carregar_dados():
 
 lista_obras, lista_status, existing_data = carregar_dados()
 
-if not existing_data.empty:
-    st.write("DEBUG: Your actual column names are:", existing_data.columns.tolist())
-    
-    OBRA_COL = "Obra"                       
-    TOMBAMENTO_COL = "N° de Tombamento"     
-    NOME_COL = "Nome"                      
-    STATUS_COL = "Status"                  
-    NF_NUM_COL = "N° da Nota Fiscal"      
-    NF_LINK_COL = "Nota Fiscal (Link)"      
-    ESPEC_COL = "Especificações"
-    OBS_COL = "Observações"
-    LOCAL_COL = "Local de Uso / Responsável"
-    VALOR_COL = "Valor"
-
 def gerar_numero_tombamento_sequencial(obra_selecionada):
     if obra_selecionada is None: return None
     itens_da_obra = existing_data[existing_data[OBRA_COL] == obra_selecionada]
@@ -233,6 +219,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
