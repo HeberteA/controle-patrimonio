@@ -17,6 +17,17 @@ if 'edit_item_id' not in st.session_state:
 if 'confirm_delete' not in st.session_state:
     st.session_state.confirm_delete = False
 
+OBRA_COL = "Obra"
+TOMBAMENTO_COL = "N° de Tombamento"
+NOME_COL = "Nome"
+STATUS_COL = "Status"
+NF_NUM_COL = "N° da Nota Fiscal"
+NF_LINK_COL = "Nota Fiscal (Link)"
+ESPEC_COL = "Especificações"
+OBS_COL = "Observações"
+LOCAL_COL = "Local de Uso / Responsável"
+VALOR_COL = "Valor"
+
 def upload_to_gdrive(file_data, file_name):
     try:
         scopes = ['https://www.googleapis.com/auth/drive']
@@ -45,10 +56,10 @@ def carregar_dados():
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
         
-        # Load main data
         patrimonio_df = conn.read(worksheet="Página1")
         patrimonio_df = patrimonio_df.dropna(how="all")
-        patrimonio_df.columns = patrimonio_df.columns.str.strip()
+        if not patrimonio_df.empty:
+            patrimonio_df.columns = patrimonio_df.columns.str.strip()
             
         return lista_obras, lista_status, patrimonio_df
     except Exception as e:
@@ -56,6 +67,9 @@ def carregar_dados():
         return [], [], pd.DataFrame()
 
 lista_obras, lista_status, existing_data = carregar_dados()
+
+if not existing_data.empty:
+    st.write("DEBUG: Your actual column names are:", existing_data.columns.tolist())
 
 def gerar_numero_tombamento_sequencial(obra_selecionada):
     if obra_selecionada is None: return None
@@ -95,8 +109,10 @@ with st.form("cadastro_form", clear_on_submit=True):
     uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal (Opcional)", type="pdf")
     submitted = st.form_submit_button("✔️ Cadastrar Item")
 
-    if submitted and not existing_data.empty:
-        if obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
+    if submitted:
+        if existing_data.empty:
+            st.error("Não é possível adicionar um item pois a planilha está vazia ou não foi carregada.")
+        elif obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
             num_tombamento_final = ""
             is_valid = False
 
@@ -136,12 +152,12 @@ with st.form("cadastro_form", clear_on_submit=True):
 st.header("Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
     col_filtro1, col_filtro2 = st.columns(2)
-    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data["Obra"].unique())))
-    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data["Status"].unique())))
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[OBRA_COL].unique())))
+    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data[STATUS_COL].unique())))
 
     dados_filtrados = existing_data
-    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
-    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
+    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados[OBRA_COL] == filtro_obra]
+    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
     
     st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
         NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
@@ -149,26 +165,54 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", "N° de Tombamento"]).iterrows()]
-    item_selecionado_gerenciar = st.selectbox("Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item...")
-
-    if item_selecionado_gerenciar:
-        tombamento_selecionado, obra_do_item_selecionado = item_selecionado_gerenciar.split(" - ")[0], item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
-        col_edit, col_delete = st.columns(2)
-        if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-            st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado); st.session_state.confirm_delete = False; st.rerun()
-        if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
-            st.session_state.confirm_delete = True; st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+    required_cols = [OBRA_COL, TOMBAMENTO_COL, NOME_COL]
+    if all(col in existing_data.columns for col in required_cols):
         
-        if st.session_state.confirm_delete:
-            tomb, obra = st.session_state.edit_item_id
-            st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-            if st.button("Sim, tenho certeza e quero remover"):
-                condicao = ~((existing_data["N° de Tombamento"] == tomb) & (existing_data["Obra"] == obra))
-                df_sem_item = existing_data[condicao]
-                conn.update(worksheet="Página1", data=df_sem_item)
-                st.success(f"Item {tomb} da obra {obra} removido!"); st.session_state.confirm_delete = False; st.session_state.edit_item_id = None; st.cache_data.clear(); st.rerun()
-                
+        existing_data[TOMBAMENTO_COL] = existing_data[TOMBAMENTO_COL].astype(str)
+        sorted_data = existing_data.sort_values(
+            by=[OBRA_COL, pd.to_numeric(existing_data[TOMBAMENTO_COL], errors='coerce')]
+        )
+        
+        lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (Obra: {row[OBRA_COL]})" for index, row in sorted_data.iterrows()]
+        
+        item_selecionado_gerenciar = st.selectbox(
+            "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
+        )
+
+        if item_selecionado_gerenciar:
+            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
+            obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
+            
+            col_edit, col_delete = st.columns(2)
+            if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+                st.session_state.confirm_delete = False
+                st.rerun()
+            if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
+                st.session_state.confirm_delete = True
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+                st.rerun()
+            
+            if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item_selecionado):
+                tomb, obra = st.session_state.edit_item_id
+                st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
+                c1, c2 = st.columns(2)
+                if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
+                    condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL] == tomb))
+                    df_sem_item = existing_data[condicao]
+                    conn.update(worksheet="Página1", data=df_sem_item)
+                    st.success(f"Item {tomb} da obra {obra} removido!")
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.cache_data.clear()
+                    st.rerun()
+                if c2.button("Não, cancelar remoção", use_container_width=True):
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.rerun()
+    else:
+        st.error(f"⚠️ Erro de configuração: Verifique se as colunas '{OBRA_COL}', '{TOMBAMENTO_COL}', e '{NOME_COL}' existem na sua planilha.")
+
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
     item_data_list = existing_data[(existing_data[TOMBAMENTO_COL] == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
@@ -219,6 +263,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
