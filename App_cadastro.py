@@ -149,34 +149,49 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-    lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in existing_data.sort_values(by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]).iterrows()]
-    item_selecionado_gerenciar = st.selectbox("Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item...")
-
-    if item_selecionado_gerenciar:
-        tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
-        obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
-        col_edit, col_delete = st.columns(2)
-        if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-            st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-            st.session_state.confirm_delete = False
-            st.rerun()
-        if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
-            st.session_state.confirm_delete = True
-            st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+    required_cols = ["Obra", "N° de Tombamento", "Nome"]
+    if all(col in existing_data.columns for col in required_cols):
         
-        if st.session_state.confirm_delete:
-            tomb, obra = st.session_state.edit_item_id
-            st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-            if st.button("Sim, tenho certeza e quero remover"):
-                condicao = ~((existing_data["N° de Tombamento"] == tomb) & (existing_data["Obra"] == obra))
-                df_sem_item = existing_data[condicao]
-                conn.update(worksheet="Página1", data=df_sem_item)
-                st.success(f"Item {tomb} da obra {obra} removido!")
-                st.session_state.confirm_delete = False
-                st.session_state.edit_item_id = None
-                st.cache_data.clear()
-                st.rerun()
+        sorted_data = existing_data.sort_values(
+            by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]
+        )
+        
+        lista_itens = [f"{row['N° de Tombamento']} - {row['Nome']} (Obra: {row['Obra']})" for index, row in sorted_data.iterrows()]
+        
+        item_selecionado_gerenciar = st.selectbox(
+            "Selecione um item para Editar ou Remover",
+            options=lista_itens,
+            index=None,
+            placeholder="Escolha um item..."
+        )
 
+        if item_selecionado_gerenciar:
+            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
+            obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
+            
+            col_edit, col_delete = st.columns(2)
+            if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+                st.session_state.confirm_delete = False
+                st.rerun()
+            if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
+                st.session_state.confirm_delete = True
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+            
+            if st.session_state.confirm_delete:
+                tomb, obra = st.session_state.edit_item_id
+                st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
+                if st.button("Sim, tenho certeza e quero remover"):
+                    condicao = ~((existing_data["N° de Tombamento"] == tomb) & (existing_data["Obra"] == obra))
+                    df_sem_item = existing_data[condicao]
+                    conn.update(worksheet="Página1", data=df_sem_item)
+                    st.success(f"Item {tomb} da obra {obra} removido!")
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.cache_data.clear()
+                    st.rerun()
+    else:
+        st.error("⚠️ Erro de configuração: Verifique se as colunas 'Obra', 'N° de Tombamento' e 'Nome' existem na sua planilha 'Página1'.")
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
     st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
@@ -227,6 +242,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
