@@ -35,6 +35,7 @@ def upload_to_gdrive(file_data, file_name):
         return None
 
 st.title("📦 Sistema de Cadastro de Patrimônio")
+
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=5)
@@ -44,10 +45,15 @@ def carregar_dados():
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
         status_df = conn.read(worksheet="Status", usecols=[0], header=0)
         lista_status = status_df["Nome do Status"].dropna().tolist()
+        
         patrimonio_df = conn.read(worksheet="Página1", usecols=list(range(10)))
         patrimonio_df = patrimonio_df.dropna(how="all")
+
+        patrimonio_df.columns = patrimonio_df.columns.str.strip()
+        
         if "N° de Tombamento" in patrimonio_df.columns:
             patrimonio_df["N° de Tombamento"] = patrimonio_df["N° de Tombamento"].astype(str)
+            
         return lista_obras, lista_status, patrimonio_df
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {e}")
@@ -57,13 +63,15 @@ def carregar_dados():
         ])
 
 lista_obras, lista_status, existing_data = carregar_dados()
-             
+                      
 def gerar_numero_tombamento_sequencial(obra_selecionada):
     if obra_selecionada is None: return None
     itens_da_obra = existing_data[existing_data["Obra"] == obra_selecionada]
     if itens_da_obra.empty: return "1"
+    
     numeros_numericos = pd.to_numeric(itens_da_obra["N° de Tombamento"], errors='coerce')
     numeros_existentes = numeros_numericos.dropna()
+    
     if numeros_existentes.empty: return "1"
     ultimo_numero = int(numeros_existentes.max())
     proximo_numero = ultimo_numero + 1
@@ -75,7 +83,7 @@ if lista_obras and lista_status:
     obra_selecionada_cadastro = col_form1.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
     status_selecionado = col_form2.selectbox("Status do Item", options=lista_status, index=0)
 else:
-    st.warning("Verifique as abas 'Obras' e 'Status'.")
+    st.warning("Verifique se as abas 'Obras' e 'Status' estão preenchidas corretamente na planilha.")
     obra_selecionada_cadastro = None
     status_selecionado = None
 
@@ -83,7 +91,7 @@ with st.form("cadastro_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
         nome_produto = st.text_input("Nome do Produto")
-        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional)")
+        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, será gerado automaticamente se vazio)")
         num_nota_fiscal = st.text_input("N° da Nota Fiscal")
         valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
     with col2:
@@ -149,7 +157,6 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-
     required_cols = ["Obra", "N° de Tombamento", "Nome"]
     if all(col in existing_data.columns for col in required_cols):
 
@@ -167,7 +174,6 @@ if not existing_data.empty:
         )
 
         if item_selecionado_gerenciar:
-            # (The rest of the editing and removal code remains the same)
             tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
             obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
             
@@ -179,11 +185,13 @@ if not existing_data.empty:
             if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
                 st.session_state.confirm_delete = True
                 st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
+                st.rerun()
             
-            if st.session_state.confirm_delete:
+            if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item_selecionado):
                 tomb, obra = st.session_state.edit_item_id
                 st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-                if st.button("Sim, tenho certeza e quero remover"):
+                c1, c2 = st.columns(2)
+                if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
                     condicao = ~((existing_data["Obra"] == obra) & (existing_data["N° de Tombamento"] == tomb))
                     df_sem_item = existing_data[condicao]
                     conn.update(worksheet="Página1", data=df_sem_item)
@@ -192,59 +200,70 @@ if not existing_data.empty:
                     st.session_state.edit_item_id = None
                     st.cache_data.clear()
                     st.rerun()
+                if c2.button("Não, cancelar remoção", use_container_width=True):
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.rerun()
+
     else:
         st.error("⚠️ Erro de configuração: Verifique se as colunas 'Obra', 'N° de Tombamento' e 'Nome' existem na sua planilha 'Página1'.")
-        
+
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
-    st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
-    item_data = existing_data[(existing_data["N° de Tombamento"] == tomb_edit_original) & (existing_data["Obra"] == obra_edit_key)].iloc[0]
+    item_data_list = existing_data[(existing_data["N° de Tombamento"] == tomb_edit_original) & (existing_data["Obra"] == obra_edit_key)]
+    
+    if not item_data_list.empty:
+        item_data = item_data_list.iloc[0]
 
-    with st.form("edit_form"):
-        st.info(f"Obra: **{item_data['Obra']}** (não pode ser alterada)")
-        
-        tomb_edit_novo = st.text_input("**N° de Tombamento (Obrigatório)**", value=item_data.get("N° de Tombamento", ""))
-        status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data.get("Status")) if item_data.get("Status") in lista_status else 0)
-        nome_edit = st.text_input("Nome do Produto", value=item_data.get("Nome", ""))
-        num_nota_fiscal_edit = st.text_input("**N° da Nota Fiscal (Obrigatório)**", value=item_data.get("N° da Nota Fiscal", ""))
-        especificacoes_edit = st.text_area("Especificações", value=item_data.get("Especificações", ""))
-        observacoes_edit = st.text_area("Observações (Opcional)", value=item_data.get("Observações", ""))
-        local_edit = st.text_input("Local de Uso / Responsável", value=item_data.get("Local de Uso / Responsável", ""))
-        valor_edit = st.number_input("Valor (R$)", min_value=0.0, format="%.2f", value=float(item_data.get("Valor", 0)))
-        
-        link_atual = item_data.get("Nota Fiscal (Link)", "")
-        if link_atual and pd.notna(link_atual):
-            st.markdown(f"**Anexo Atual:** [Abrir PDF]({link_atual})")
-        
-        submitted_edit = st.form_submit_button("💾 Salvar Alterações")
-        if submitted_edit:
-            if num_nota_fiscal_edit and tomb_edit_novo:
-                condicao_outro_item = (existing_data['Obra'] == obra_edit_key) & \
-                                      (existing_data['N° de Tombamento'] == tomb_edit_novo) & \
-                                      (existing_data['N° de Tombamento'] != tomb_edit_original)
-                
-                if not existing_data[condicao_outro_item].empty:
-                    st.error(f"Erro: O N° de Tombamento '{tomb_edit_novo}' já existe para outro item nesta obra.")
-                else:
-                    condicao_update = (existing_data["N° de Tombamento"] == tomb_edit_original) & (existing_data["Obra"] == obra_edit_key)
-                    idx_to_update = existing_data.index[condicao_update].tolist()[0]
-
-                    existing_data.loc[idx_to_update, "N° de Tombamento"] = tomb_edit_novo
-                    existing_data.loc[idx_to_update, "Status"] = status_edit
-                    existing_data.loc[idx_to_update, "Nome"] = nome_edit
-                    existing_data.loc[idx_to_update, "N° da Nota Fiscal"] = num_nota_fiscal_edit
-                    existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
-                    existing_data.loc[idx_to_update, "Observações"] = observacoes_edit
-                    existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
-                    existing_data.loc[idx_to_update, "Valor"] = valor_edit
+        with st.form("edit_form"):
+            st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
+            st.info(f"Obra: **{item_data['Obra']}** (não pode ser alterada)")
+            
+            tomb_edit_novo = st.text_input("**N° de Tombamento (Obrigatório)**", value=item_data.get("N° de Tombamento", ""))
+            status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data.get("Status")) if item_data.get("Status") in lista_status else 0)
+            nome_edit = st.text_input("Nome do Produto", value=item_data.get("Nome", ""))
+            num_nota_fiscal_edit = st.text_input("**N° da Nota Fiscal (Obrigatório)**", value=item_data.get("N° da Nota Fiscal", ""))
+            especificacoes_edit = st.text_area("Especificações", value=item_data.get("Especificações", ""))
+            observacoes_edit = st.text_area("Observações (Opcional)", value=item_data.get("Observações", ""))
+            local_edit = st.text_input("Local de Uso / Responsável", value=item_data.get("Local de Uso / Responsável", ""))
+            valor_edit = st.number_input("Valor (R$)", min_value=0.0, format="%.2f", value=float(item_data.get("Valor", 0)))
+            
+            link_atual = item_data.get("Nota Fiscal (Link)", "")
+            if link_atual and pd.notna(link_atual):
+                st.markdown(f"**Anexo Atual:** [Abrir PDF]({link_atual})")
+            
+            submitted_edit = st.form_submit_button("💾 Salvar Alterações")
+            if submitted_edit:
+                if num_nota_fiscal_edit and tomb_edit_novo:
+                    condicao_outro_item = (existing_data['Obra'] == obra_edit_key) & \
+                                          (existing_data['N° de Tombamento'] == tomb_edit_novo) & \
+                                          (existing_data.index != item_data.name)
                     
-                    conn.update(worksheet="Página1", data=existing_data)
-                    st.success(f"Item {tomb_edit_novo} atualizado com sucesso!")
-                    st.session_state.edit_item_id = None
-                    st.cache_data.clear()
-                    st.rerun()
-            else:
-                st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+                    if not existing_data[condicao_outro_item].empty:
+                        st.error(f"Erro: O N° de Tombamento '{tomb_edit_novo}' já existe para outro item nesta obra.")
+                    else:
+                        idx_to_update = item_data.name
+                        existing_data.loc[idx_to_update, "N° de Tombamento"] = tomb_edit_novo
+                        existing_data.loc[idx_to_update, "Status"] = status_edit
+                        existing_data.loc[idx_to_update, "Nome"] = nome_edit
+                        existing_data.loc[idx_to_update, "N° da Nota Fiscal"] = num_nota_fiscal_edit
+                        existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
+                        existing_data.loc[idx_to_update, "Observações"] = observacoes_edit
+                        existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
+                        existing_data.loc[idx_to_update, "Valor"] = valor_edit
+                        
+                        conn.update(worksheet="Página1", data=existing_data)
+                        st.success(f"Item {tomb_edit_novo} atualizado com sucesso!")
+                        st.session_state.edit_item_id = None
+                        st.cache_data.clear()
+                        st.rerun()
+                else:
+                    st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+    else:
+        st.error("O item selecionado para edição não foi encontrado. Pode ter sido removido.")
+        st.session_state.edit_item_id = None
+        st.rerun()
+
 
 
 
