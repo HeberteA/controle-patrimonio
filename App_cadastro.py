@@ -166,10 +166,15 @@ if not existing_data.empty:
     if all(col in existing_data.columns for col in required_cols):
         
         existing_data[TOMBAMENTO_COL] = existing_data[TOMBAMENTO_COL].astype(str)
-        sorted_data = existing_data.sort_values(
-            by=[OBRA_COL, pd.to_numeric(existing_data[TOMBAMENTO_COL], errors='coerce')]
-        )
-        
+        df_to_sort = existing_data.copy()
+        temp_col_name = '_tombamento_numeric'
+        df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
+        sorted_data = df_to_sort.sort_values(
+             by=[OBRA_COL, temp_col_name]
+         )
+
+# 3. (Opcional) Remova a coluna temporária se não precisar mais dela
+sorted_data = sorted_data.drop(columns=[temp_col_name])
         lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (Obra: {row[OBRA_COL]})" for index, row in sorted_data.iterrows()]
         
         item_selecionado_gerenciar = st.selectbox(
@@ -257,6 +262,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
