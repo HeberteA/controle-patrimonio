@@ -136,12 +136,12 @@ with st.form("cadastro_form", clear_on_submit=True):
 st.header("Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
     col_filtro1, col_filtro2 = st.columns(2)
-    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[OBRA_COL].unique())))
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[].unique())))
     filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data[STATUS_COL].unique())))
 
     dados_filtrados = existing_data
-    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados[OBRA_COL] == filtro_obra]
-    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
+    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados["Obra"] == filtro_obra]
+    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados["Status"] == filtro_status]
     
     st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
         NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
@@ -219,6 +219,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
