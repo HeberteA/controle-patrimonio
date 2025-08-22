@@ -7,6 +7,12 @@ from googleapiclient.http import MediaIoBaseUpload
 import io
 import base64
 
+@st.cache_data
+def get_img_as_base64(file):
+    with open(file, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+    
 caminho_imagem = "Lavie.png" 
 img_base64 = get_img_as_base64(caminho_imagem)
 tipo_imagem = "image/png" if caminho_imagem.lower().endswith(".png") or caminho_imagem.lower().endswith(".png") else "image/png"
@@ -284,6 +290,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
