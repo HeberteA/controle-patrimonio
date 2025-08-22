@@ -188,30 +188,58 @@ if not existing_data.empty:
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
     tomb_edit, obra_edit_key = st.session_state.edit_item_id
     st.subheader(f"Editando Item: {tomb_edit} (Obra: {obra_edit_key})")
+
     item_data = existing_data[(existing_data["N° de Tombamento"] == tomb_edit) & (existing_data["Obra"] == obra_edit_key)].iloc[0]
 
     with st.form("edit_form"):
         st.info(f"Obra: **{item_data['Obra']}** (não pode ser alterada)")
-        status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(item_data["Status"]) if item_data["Status"] in lista_status else 0)
-        nome_edit = st.text_input("Nome do Produto", value=item_data["Nome"])
+
+        status_atual = item_data.get("Status", lista_status[0] if lista_status else "")
+        status_edit = st.selectbox("Status", options=lista_status, index=lista_status.index(status_atual) if status_atual in lista_status else 0)
+        
+        nome_edit = st.text_input("Nome do Produto", value=item_data.get("Nome", ""))
         num_nota_fiscal_edit = st.text_input("**N° da Nota Fiscal (Obrigatório)**", value=item_data.get("N° da Nota Fiscal", ""))
         especificacoes_edit = st.text_area("Especificações", value=item_data.get("Especificações", ""))
         observacoes_edit = st.text_area("Observações (Opcional)", value=item_data.get("Observações", ""))
-        local_edit = st.text_input("Local de Uso / Responsável", value=item_data["Local de Uso / Responsável"])
-        st.markdown(f"**Anexo Atual:** [Abrir PDF]({item_data['Nota Fiscal (Link)']})")
-        valor_edit = st.number_input("Valor (R$)", min_value=0.0, format="%.2f", value=float(item_data["Valor"]))
-        
+        local_edit = st.text_input("Local de Uso / Responsável", value=item_data.get("Local de Uso / Responsável", ""))
+        valor_edit = st.number_input("Valor (R$)", min_value=0.0, format="%.2f", value=float(item_data.get("Valor", 0)))
+
+        link_atual = item_data.get("Nota Fiscal (Link)", "")
+        if link_atual and pd.notna(link_atual):
+            st.markdown(f"**Anexo Atual:** [Abrir PDF]({link_atual})")
+        else:
+            st.markdown("**Anexo Atual:** Nenhum PDF anexado.")
+
+        novo_pdf = st.file_uploader("Substituir Anexo PDF (Opcional)", type="pdf")
+
         submitted_edit = st.form_submit_button("💾 Salvar Alterações")
         if submitted_edit:
             if num_nota_fiscal_edit:
                 condicao_update = (existing_data["N° de Tombamento"] == tomb_edit) & (existing_data["Obra"] == obra_edit_key)
                 idx_to_update = existing_data.index[condicao_update].tolist()[0]
-                existing_data.loc[idx_to_update, "Status"] = status_edit; existing_data.loc[idx_to_update, "Nome"] = nome_edit
-                existing_data.loc[idx_to_update, "N° da Nota Fiscal"] = num_nota_fiscal_edit; existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
-                existing_data.loc[idx_to_update, "Observações"] = observacoes_edit; existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
+
+                existing_data.loc[idx_to_update, "Status"] = status_edit
+                existing_data.loc[idx_to_update, "Nome"] = nome_edit
+                existing_data.loc[idx_to_update, "N° da Nota Fiscal"] = num_nota_fiscal_edit
+                existing_data.loc[idx_to_update, "Especificações"] = especificacoes_edit
+                existing_data.loc[idx_to_update, "Observações"] = observacoes_edit
+                existing_data.loc[idx_to_update, "Local de Uso / Responsável"] = local_edit
                 existing_data.loc[idx_to_update, "Valor"] = valor_edit
+
+                if novo_pdf is not None:
+                    pdf_data = novo_pdf.getvalue()
+                    st.info("Substituindo anexo no Google Drive...")
+                    novo_link = upload_to_gdrive(pdf_data, f"NF_{tomb_edit}_{obra_edit_key.replace(' ', '_')}.pdf")
+                    if novo_link:
+                        existing_data.loc[idx_to_update, "Nota Fiscal (Link)"] = novo_link
+                    else:
+                        st.error("Falha ao fazer upload do novo anexo. O link anterior foi mantido.")
+
                 conn.update(worksheet="Página1", data=existing_data)
-                st.success(f"Item {tomb_edit} atualizado!"); st.session_state.edit_item_id = None; st.cache_data.clear(); st.rerun()
+                st.success(f"Item {tomb_edit} atualizado!"); 
+                st.session_state.edit_item_id = None; 
+                st.cache_data.clear(); 
+                st.rerun()
             else:
                 st.warning("O campo 'N° da Nota Fiscal' é obrigatório.")
 
