@@ -12,6 +12,36 @@ st.set_page_config(
     layout="wide"
 )
 
+@st.cache_data
+def get_img_as_base64(file):
+    with open(file, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+    
+caminho_imagem = "Lavie.png" 
+img_base64 = get_img_as_base64(caminho_imagem)
+
+st.markdown(
+    f"""
+    <style>
+    [data-testid="stBlockContainer"]:first-child {{
+        background-image: url("data:image/png;base64,{img_base64}");
+        background-size: cover;
+        background-position: center;
+        border-radius: 10px;
+        padding: 2rem;
+    }}
+    
+    /* Opcional: Mudar a cor do texto no cabeçalho para branco */
+    [data-testid="stBlockContainer"]:first-child h1,
+    [data-testid="stBlockContainer"]:first-child p {{
+        color: white;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 if 'edit_item_id' not in st.session_state:
     st.session_state.edit_item_id = None
 if 'confirm_delete' not in st.session_state:
@@ -260,6 +290,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
