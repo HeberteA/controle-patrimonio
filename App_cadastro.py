@@ -57,11 +57,6 @@ def carregar_dados():
         ])
 
 lista_obras, lista_status, existing_data = carregar_dados()
-st.subheader("Diagnóstico de Dados Carregados")
-st.write("Abaixo estão os nomes das colunas exatamente como o Python os leu da planilha:")
-st.write(existing_data.columns.tolist())
-st.write("E aqui estão as primeiras linhas da tabela carregada:")
-st.dataframe(existing_data.head())
              
 def gerar_numero_tombamento_sequencial(obra_selecionada):
     if obra_selecionada is None: return None
@@ -154,11 +149,10 @@ if not existing_data.empty:
 
 st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 if not existing_data.empty:
-    # Safety check to ensure the necessary columns exist
+
     required_cols = ["Obra", "N° de Tombamento", "Nome"]
     if all(col in existing_data.columns for col in required_cols):
-        
-        # Safely sorts the values
+
         sorted_data = existing_data.sort_values(
             by=["Obra", pd.to_numeric(existing_data["N° de Tombamento"], errors='coerce')]
         )
@@ -251,6 +245,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
                     st.rerun()
             else:
                 st.warning("Os campos 'N° de Tombamento' e 'N° da Nota Fiscal' são obrigatórios.")
+
 
 
 
