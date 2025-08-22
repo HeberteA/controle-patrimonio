@@ -153,7 +153,7 @@ with st.form("cadastro_form", clear_on_submit=True):
             is_valid = False
 
             if num_tombamento_manual:
-                condicao = (existing_data[OBRA_COL] == obra_selecionada_cadastro) & (existing_data[TOMBAMENTO_COL] == num_tombamento_manual)
+                condicao = (existing_data[OBRA_COL] == obra_selecionada_cadastro) & (existing_data[TOMBAMENTO_COL].astype(str) == num_tombamento_manual)
                 if not existing_data[condicao].empty:
                     st.error(f"Erro: O N° de Tombamento '{num_tombamento_manual}' já existe para esta obra.")
                 else:
@@ -300,6 +300,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
