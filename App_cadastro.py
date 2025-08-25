@@ -9,7 +9,7 @@ import base64
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
-    page_icon="Lavie.png",
+    page_icon="Lavie (2).png",
     layout="wide"
 )
 
@@ -74,7 +74,7 @@ def carregar_dados():
         return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO)
 
 try:
-    caminho_imagem = "Lavie.png"
+    caminho_imagem = "Lavie (2).png"
     img_base64 = get_img_as_base64(caminho_imagem)
     tipo_imagem = "image/png"
     st.markdown(
@@ -305,6 +305,7 @@ if st.session_state.edit_item_id and not st.session_state.confirm_delete:
         st.error("O item selecionado para edição não foi encontrado.")
         st.session_state.edit_item_id = None
         st.rerun()
+
 
 
 
