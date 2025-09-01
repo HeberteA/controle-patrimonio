@@ -65,13 +65,21 @@ def upload_to_gdrive(file_data, file_name):
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def tela_de_login():
+    logo_path = "Lavie.png" 
+    try:
+        st.image(logo_path, width=1000) 
+    except FileNotFoundError:
+        st.warning(f"Logo '{logo_path}' não encontrada. Verifique o caminho.")
+    except Exception as e:
+        st.error(f"Erro ao carregar a logo: {e}")
+        
     st.title("Controle de Patrimônio - Acesso por Obra")
     st.write("---")
     
     try:
         obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
-
+        
         codigos_obras = st.secrets.obra_codes
 
         obra_selecionada = st.selectbox("Selecione a Obra para continuar", options=lista_obras, index=None, placeholder="Escolha a obra...")
@@ -269,6 +277,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
