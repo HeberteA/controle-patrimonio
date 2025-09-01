@@ -74,7 +74,7 @@ def tela_de_login():
         st.markdown(
             f"""
             <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="200">
+                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="1000">
             </div>
             """,
             unsafe_allow_html=True,
@@ -365,4 +365,5 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
