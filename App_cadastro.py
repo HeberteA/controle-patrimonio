@@ -67,33 +67,27 @@ def upload_to_gdrive(file_data, file_name):
         return None
 
 conn = st.connection("gsheets", type=GSheetsConnection)
-
 def tela_de_login():
     logo_path = "Lavie.png"
-    col_left, col_center, col_right = st.columns([1, 2, 1])
-    with col_center:
-        try:
-            st.image(logo_path, width=1000)
-        except Exception:
-            st.warning(f"Logo '{logo_path}' não encontrada.")
-            
-    st.title("Controle de Patrimônio")
+    try:
+        img_base64 = get_img_as_base64(logo_path)
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="200">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    except Exception:
+        st.warning(f"Logo '{logo_path}' não encontrada. Verifique se o arquivo está no repositório.")
     
-    if st.session_state.admin_login_attempt:
-        st.subheader("Acesso Administrador")
-        admin_password = st.text_input("Senha do Administrador", type="password")
-        if st.button("Login Admin"):
-            if admin_password == st.secrets.admin.password:
-                st.session_state.logged_in = True
-                st.session_state.is_admin = True
-                st.rerun()
-            else:
-                st.error("Senha de administrador incorreta.")
-        if st.button("Voltar para Acesso por Obra"):
-            st.session_state.admin_login_attempt = False
-            st.rerun()
-    else:
-        st.subheader("Acesso por Obra")
+    st.title("Controle de Patrimônio")
+
+    tab1, tab2 = st.tabs(["👤 Acesso por Obra", "🔑 Acesso de Administrador"])
+
+    with tab1:
+        st.subheader("Login da Obra")
         try:
             obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
             lista_obras = obras_df["Nome da Obra"].dropna().tolist()
@@ -102,8 +96,8 @@ def tela_de_login():
             obra_selecionada = st.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
             
             if obra_selecionada:
-                codigo_acesso = st.text_input("Código de Acesso da Obra", type="password")
-                if st.button("Entrar"):
+                codigo_acesso = st.text_input("Código de Acesso", type="password", key="obra_password")
+                if st.button("Entrar na Obra"):
                     if codigo_acesso == codigos_obras.get(obra_selecionada):
                         st.session_state.logged_in = True
                         st.session_state.is_admin = False
@@ -111,13 +105,19 @@ def tela_de_login():
                         st.rerun()
                     else:
                         st.error("Código de acesso incorreto.")
-            
-            st.write("---")
-            if st.button("Entrar como Administrador"):
-                st.session_state.admin_login_attempt = True
-                st.rerun()
         except Exception as e:
             st.error(f"Não foi possível carregar a lista de obras. Erro: {e}")
+
+    with tab2:
+        st.subheader("Login de Administrador")
+        admin_password = st.text_input("Senha do Administrador", type="password", key="admin_password")
+        if st.button("Entrar como Administrador"):
+            if admin_password == st.secrets.admin.password:
+                st.session_state.logged_in = True
+                st.session_state.is_admin = True
+                st.rerun()
+            else:
+                st.error("Senha de administrador incorreta.")
 
 def app_principal():
     is_admin = st.session_state.is_admin
@@ -365,3 +365,4 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
