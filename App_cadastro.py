@@ -9,9 +9,18 @@ import base64
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
-    page_icon="Lavie (2).png",
+    page_icon="Lavie1.png",
     layout="wide"
 )
+
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'selected_obra' not in st.session_state:
+    st.session_state.selected_obra = None
+if 'edit_item_id' not in st.session_state:
+    st.session_state.edit_item_id = None
+if 'confirm_delete' not in st.session_state:
+    st.session_state.confirm_delete = False
 
 @st.cache_data
 def get_img_as_base64(file):
@@ -27,11 +36,13 @@ NF_NUM_COL = "N° da Nota Fiscal"
 NF_LINK_COL = "Nota Fiscal (Link)"
 ESPEC_COL = "Especificações"
 OBS_COL = "Observações"
-LOCAL_COL = "Local de Uso / Responsável"
+LOCAL_COL = "Local de Uso" 
+RESPONSAVEL_COL = "Responsável" 
 VALOR_COL = "Valor"
 
 COLUNAS_PATRIMONIO = [
-    OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL,
+    OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, 
+    LOCAL_COL, RESPONSAVEL_COL,
     NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL
 ]
 
@@ -51,294 +62,143 @@ def upload_to_gdrive(file_data, file_name):
         st.error(f"Erro no upload para o Google Drive: {e}")
         return None
 
-@st.cache_data(ttl=5)
-def carregar_dados():
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+def tela_de_login():
+    st.title("Controle de Patrimônio - Acesso por Obra")
+    st.write("---")
+    
     try:
         obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
         lista_obras = obras_df["Nome da Obra"].dropna().tolist()
+
+        codigos_obras = st.secrets.obra_codes
+
+        obra_selecionada = st.selectbox("Selecione a Obra para continuar", options=lista_obras, index=None, placeholder="Escolha a obra...")
         
-        status_df = conn.read(worksheet="Status", usecols=[0], header=0)
-        lista_status = status_df["Nome do Status"].dropna().tolist()
-        
-        patrimonio_df = conn.read(worksheet="Página1")
-        
-        if patrimonio_df.empty:
-            patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
-        else:
-            patrimonio_df = patrimonio_df.dropna(how="all")
-            patrimonio_df.columns = patrimonio_df.columns.str.strip()
-            
-        return lista_obras, lista_status, patrimonio_df
-    except Exception as e:
-        st.error(f"Erro ao ler a planilha: {e}")
-        return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO)
-
-try:
-    caminho_imagem = "Lavie (2).png"
-    img_base64 = get_img_as_base64(caminho_imagem)
-    tipo_imagem = "image/png"
-    st.markdown(
-        f"""
-        <style>
-        [data-testid="stBlockContainer"]:first-child {{
-            background-image: url("data:{tipo_imagem};base64,{img_base64}");
-            background-size: cover;
-            background-position: center;
-            border-radius: 10px;
-            padding: 2rem;
-        }}
-        [data-testid="stBlockContainer"]:first-child h1,
-        [data-testid="stBlockContainer"]:first-child p {{
-            color: white;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-except FileNotFoundError:
-    st.warning("Arquivo 'Lavie.png' não encontrado. O cabeçalho não terá imagem de fundo.")
-
-if 'edit_item_id' not in st.session_state:
-    st.session_state.edit_item_id = None
-if 'confirm_delete' not in st.session_state:
-    st.session_state.confirm_delete = False
-
-st.title("📦 Sistema de Cadastro de Patrimônio")
-
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-lista_obras, lista_status, existing_data = carregar_dados()
-
-def gerar_numero_tombamento_sequencial(obra_selecionada):
-    if obra_selecionada is None: return None
-    itens_da_obra = existing_data[existing_data[OBRA_COL] == obra_selecionada]
-    if itens_da_obra.empty: return "1"
-    
-    numeros_numericos = pd.to_numeric(itens_da_obra[TOMBAMENTO_COL], errors='coerce')
-    numeros_existentes = numeros_numericos.dropna()
-    
-    if numeros_existentes.empty: return "1"
-    ultimo_numero = int(numeros_existentes.max())
-    proximo_numero = ultimo_numero + 1
-    return str(proximo_numero)
-
-st.header("Cadastrar Novo Item", divider='rainbow')
-if lista_obras and lista_status:
-    col_form1, col_form2 = st.columns(2)
-    obra_selecionada_cadastro = col_form1.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
-    status_selecionado = col_form2.selectbox("Status do Item", options=lista_status, index=0)
-else:
-    st.warning("Verifique se as abas 'Obras' e 'Status' estão preenchidas para cadastrar um item.")
-    obra_selecionada_cadastro = None
-    status_selecionado = None
-
-with st.form("cadastro_form", clear_on_submit=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        nome_produto = st.text_input("Nome do Produto")
-        num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixa em branco para automático)")
-        num_nota_fiscal = st.text_input("N° da Nota Fiscal")
-        valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
-    with col2:
-        especificacoes = st.text_area("Especificações")
-        observacoes = st.text_area("Observações (Opcional)")
-        local_responsavel = st.text_input("Local de Uso / Responsável")
-    
-    uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal (Opcional)", type="pdf")
-    submitted = st.form_submit_button("✔️ Cadastrar Item")
-
-    if submitted:
-        if obra_selecionada_cadastro and nome_produto and num_nota_fiscal:
-            num_tombamento_final = ""
-            is_valid = False
-
-            if num_tombamento_manual:
-                input_limpo = num_tombamento_manual.strip()
-
-                coluna_limpa = existing_data[TOMBAMENTO_COL].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-
-                condicao = (existing_data[OBRA_COL] == obra_selecionada_cadastro) & (coluna_limpa == input_limpo)
-                
-                if not existing_data[condicao].empty:
-                    st.error(f"Erro: O N° de Tombamento '{input_limpo}' já existe para esta obra.")
+        if obra_selecionada:
+            codigo_acesso = st.text_input("Código de Acesso da Obra", type="password")
+            if st.button("Entrar"):
+                if codigo_acesso == codigos_obras.get(obra_selecionada):
+                    st.session_state.logged_in = True
+                    st.session_state.selected_obra = obra_selecionada
+                    st.rerun()
                 else:
-                    num_tombamento_final = input_limpo
-                    is_valid = True
+                    st.error("Código de acesso incorreto.")
+
+    except Exception as e:
+        st.error(f"Não foi possível carregar a lista de obras. Verifique a planilha 'Obras'. Erro: {e}")
+
+def app_principal():
+    obra_logada = st.session_state.selected_obra
+
+    try:
+        caminho_imagem = "Lavie.png"
+        img_base64 = get_img_as_base64(caminho_imagem)
+        tipo_imagem = "image/png"
+        st.markdown(f"""<style>[data-testid="stBlockContainer"]:first-child {{background-image: url("data:{tipo_imagem};base64,{img_base64}"); background-size: cover; background-position: center; border-radius: 10px; padding: 2rem;}} [data-testid="stBlockContainer"]:first-child h1, [data-testid="stBlockContainer"]:first-child p {{color: white;}} </style>""", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning("Arquivo 'Lavie.png' não encontrado.")
+
+    st.title(f"📦 Sistema de Cadastro de Patrimônio")
+    st.subheader(f"Obra: **{obra_logada}**")
+
+    # --- CARREGAMENTO DOS DADOS ---
+    @st.cache_data(ttl=5)
+    def carregar_dados_app():
+        try:
+            status_df = conn.read(worksheet="Status", usecols=[0], header=0)
+            lista_status = status_df["Nome do Status"].dropna().tolist()
+            
+            patrimonio_df = conn.read(worksheet="Página1")
+            
+            if patrimonio_df.empty:
+                patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
             else:
-                num_tombamento_final = gerar_numero_tombamento_sequencial(obra_selecionada_cadastro)
-                is_valid = True
-            
-            if is_valid:
-                link_nota_fiscal = ""
-                if uploaded_pdf is not None:
-                    pdf_data = uploaded_pdf.getvalue()
-                    st.info("Fazendo upload da nota fiscal...")
-                    link_nota_fiscal = upload_to_gdrive(pdf_data, f"NF_{num_tombamento_final}_{obra_selecionada_cadastro.replace(' ', '_')}.pdf")
+                patrimonio_df = patrimonio_df.dropna(how="all")
+                patrimonio_df.columns = patrimonio_df.columns.str.strip()
                 
-                novo_item_df = pd.DataFrame([{
-                    OBRA_COL: obra_selecionada_cadastro, TOMBAMENTO_COL: num_tombamento_final,
-                    NOME_COL: nome_produto, ESPEC_COL: especificacoes, OBS_COL: observacoes,
-                    LOCAL_COL: local_responsavel, NF_NUM_COL: num_nota_fiscal,
-                    NF_LINK_COL: link_nota_fiscal, VALOR_COL: valor_produto, STATUS_COL: status_selecionado
-                }])
-                
-                updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
-                conn.update(worksheet="Página1", data=updated_df)
-                st.success(f"Item '{nome_produto}' cadastrado! Tombamento: {num_tombamento_final}")
-                st.cache_data.clear()
-                st.rerun()
-        else:
-            st.warning("⚠️ Preencha os campos obrigatórios (Obra, Nome, N° da Nota Fiscal).")
+            return lista_status, patrimonio_df
+        except Exception as e:
+            st.error(f"Erro ao ler a planilha: {e}")
+            return [], pd.DataFrame(columns=COLUNAS_PATRIMONIO)
 
-st.header("Itens Cadastrados", divider='rainbow')
-if not existing_data.empty:
-    col_filtro1, col_filtro2 = st.columns(2)
-    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[OBRA_COL].unique())))
-    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data[STATUS_COL].unique())))
-
-    dados_filtrados = existing_data
-    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados[OBRA_COL] == filtro_obra]
-    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
+    lista_status, existing_data = carregar_dados_app()
     
-    st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
-        NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
-    })
+    # Filtra os dados apenas para a obra logada
+    dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_logada].copy()
 
-st.header("Gerenciar Itens Cadastrados", divider='rainbow')
-if not existing_data.empty:
-    required_cols = [OBRA_COL, TOMBAMENTO_COL, NOME_COL]
-    if all(col in existing_data.columns for col in required_cols):
-        
-        existing_data[TOMBAMENTO_COL] = existing_data[TOMBAMENTO_COL].astype(str)
-        df_to_sort = existing_data.copy()
-        temp_col_name = '_tombamento_numeric'
-        df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
-        sorted_data = df_to_sort.sort_values(
-            by=[OBRA_COL, temp_col_name]
-        )
-        sorted_data = sorted_data.drop(columns=[temp_col_name])
-        lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (Obra: {row[OBRA_COL]})" for index, row in sorted_data.iterrows()]
-        
-        item_selecionado_gerenciar = st.selectbox(
-            "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
-        )
+    def gerar_numero_tombamento_sequencial():
+        if dados_da_obra.empty: return "1"
+        numeros_numericos = pd.to_numeric(dados_da_obra[TOMBAMENTO_COL], errors='coerce').dropna()
+        if numeros_numericos.empty: return "1"
+        return str(int(numeros_numericos.max()) + 1)
 
-        if item_selecionado_gerenciar:
-            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
-            obra_do_item_selecionado = item_selecionado_gerenciar.split("(Obra: ")[1].replace(")", "")
-            
-            col_edit, col_delete = st.columns(2)
-            if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-                st.session_state.confirm_delete = False
-                st.rerun()
-            if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
-                st.session_state.confirm_delete = True
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-                st.rerun()
-            
-            if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item_selecionado):
-                tomb, obra = st.session_state.edit_item_id
-                st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-                c1, c2 = st.columns(2)
-                if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
-                    condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL] == tomb))
-                    df_sem_item = existing_data[condicao]
-                    conn.update(worksheet="Página1", data=df_sem_item)
-                    st.success(f"Item {tomb} da obra {obra} removido!")
-                    st.session_state.confirm_delete = False
-                    st.session_state.edit_item_id = None
+    # --- FORMULÁRIO DE CADASTRO ---
+    st.header("Cadastrar Novo Item", divider='rainbow')
+    
+    with st.form("cadastro_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            nome_produto = st.text_input("Nome do Produto*")
+            num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixa em branco para automático)")
+            num_nota_fiscal = st.text_input("N° da Nota Fiscal*")
+            valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+            status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
+        with col2:
+            especificacoes = st.text_area("Especificações")
+            observacoes = st.text_area("Observações (Opcional)")
+            ## ALTERADO - Campos separados
+            local_uso = st.text_input("Local de Uso*")
+            responsavel = st.text_input("Responsável (Opcional)")
+        
+        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal (Opcional)", type="pdf")
+        submitted = st.form_submit_button("✔️ Cadastrar Item")
+
+        if submitted:
+            ## ALTERADO - Validação com o novo campo obrigatório
+            if nome_produto and num_nota_fiscal and local_uso:
+                input_limpo = num_tombamento_manual.strip() if num_tombamento_manual else ""
+                num_tombamento_final = ""
+                is_valid = False
+
+                if input_limpo:
+                    coluna_limpa = dados_da_obra[TOMBAMENTO_COL].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                    if input_limpo in coluna_limpa.values:
+                        st.error(f"Erro: O N° de Tombamento '{input_limpo}' já existe para esta obra.")
+                    else:
+                        num_tombamento_final = input_limpo
+                        is_valid = True
+                else:
+                    num_tombamento_final = gerar_numero_tombamento_sequencial()
+                    is_valid = True
+                
+                if is_valid:
+                    link_nota_fiscal = ""
+                    if uploaded_pdf:
+                        link_nota_fiscal = upload_to_gdrive(uploaded_pdf.getvalue(), f"NF_{num_tombamento_final}_{obra_logada.replace(' ', '_')}.pdf")
+                    
+                    novo_item_df = pd.DataFrame([{
+                        OBRA_COL: obra_logada, TOMBAMENTO_COL: num_tombamento_final,
+                        NOME_COL: nome_produto, ESPEC_COL: especificacoes, OBS_COL: observacoes,
+                        LOCAL_COL: local_uso, RESPONSAVEL_COL: responsavel, ## ALTERADO
+                        NF_NUM_COL: num_nota_fiscal, NF_LINK_COL: link_nota_fiscal, 
+                        VALOR_COL: valor_produto, STATUS_COL: status_selecionado
+                    }])
+                    
+                    updated_df = pd.concat([existing_data, novo_item_df], ignore_index=True)
+                    conn.update(worksheet="Página1", data=updated_df)
+                    st.success(f"Item '{nome_produto}' cadastrado! Tombamento: {num_tombamento_final}")
                     st.cache_data.clear()
                     st.rerun()
-                if c2.button("Não, cancelar remoção", use_container_width=True):
-                    st.session_state.confirm_delete = False
-                    st.session_state.edit_item_id = None
-                    st.rerun()
-
-if st.session_state.edit_item_id and not st.session_state.confirm_delete:
-    tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
-    item_data_list = existing_data[(existing_data[TOMBAMENTO_COL] == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
+            else:
+                st.warning("⚠️ Preencha os campos obrigatórios (*).")
     
-    if not item_data_list.empty:
-        item_data = item_data_list.iloc[0]
+    # ... O resto do seu código (Gerenciar Itens, etc.) precisa ser adaptado para usar 'dados_da_obra' em vez de 'existing_data'
+    # ... e também os novos campos de Local de Uso e Responsável no formulário de edição.
 
-        with st.form("edit_form"):
-            st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
-            
-            tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL} ", value=item_data.get(TOMBAMENTO_COL, ""))
-            status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data.get(STATUS_COL)) if item_data.get(STATUS_COL) in lista_status else 0)
-            nome_edit = st.text_input(NOME_COL, value=item_data.get(NOME_COL, ""))
-            num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL} ", value=item_data.get(NF_NUM_COL, ""))
-            especificacoes_edit = st.text_area(ESPEC_COL, value=item_data.get(ESPEC_COL, ""))
-            observacoes_edit = st.text_area(OBS_COL, value=item_data.get(OBS_COL, ""))
-            local_edit = st.text_input(LOCAL_COL, value=item_data.get(LOCAL_COL, ""))
-            valor_edit = st.number_input(f"{VALOR_COL} (R$)", min_value=0.0, format="%.2f", value=float(item_data.get(VALOR_COL, 0)))
-            
-            submitted_edit = st.form_submit_button("💾 Salvar Alterações")
-            if submitted_edit:
-                if num_nota_fiscal_edit and tomb_edit_novo:
-                    condicao_outro_item = (existing_data[OBRA_COL] == obra_edit_key) & \
-                                          (existing_data[TOMBAMENTO_COL] == tomb_edit_novo) & \
-                                          (existing_data.index != item_data.name)
-                    
-                    if not existing_data[condicao_outro_item].empty:
-                        st.error(f"Erro: O N° de Tombamento '{tomb_edit_novo}' já existe para outro item nesta obra.")
-                    else:
-                        idx_to_update = item_data.name
-                        existing_data.loc[idx_to_update, TOMBAMENTO_COL] = tomb_edit_novo
-                        existing_data.loc[idx_to_update, STATUS_COL] = status_edit
-                        existing_data.loc[idx_to_update, NOME_COL] = nome_edit
-                        existing_data.loc[idx_to_update, NF_NUM_COL] = num_nota_fiscal_edit
-                        existing_data.loc[idx_to_update, ESPEC_COL] = especificacoes_edit
-                        existing_data.loc[idx_to_update, OBS_COL] = observacoes_edit
-                        existing_data.loc[idx_to_update, LOCAL_COL] = local_edit
-                        existing_data.loc[idx_to_update, VALOR_COL] = valor_edit
-                        
-                        conn.update(worksheet="Página1", data=existing_data)
-                        st.success(f"Item {tomb_edit_novo} atualizado com sucesso!")
-                        st.session_state.edit_item_id = None
-                        st.cache_data.clear()
-                        st.rerun()
-                else:
-                    st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
-    else:
-        st.error("O item selecionado para edição não foi encontrado.")
-        st.session_state.edit_item_id = None
-        st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# --- CONTROLE DE FLUXO PRINCIPAL ---
+if not st.session_state.logged_in:
+    tela_de_login()
+else:
+    app_principal()
