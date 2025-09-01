@@ -193,10 +193,8 @@ def app_principal():
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (*).")
     
-st.header("Itens Cadastrados", divider='rainbow')
-    # Usa 'dados_da_obra' para garantir que apenas itens da obra logada sejam mostrados
+    st.header("Itens Cadastrados", divider='rainbow')
     if not dados_da_obra.empty:
-        # O filtro de status agora só mostra opções relevantes para a obra atual
         filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
 
         dados_filtrados = dados_da_obra
@@ -271,6 +269,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
