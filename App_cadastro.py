@@ -66,11 +66,15 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 def tela_de_login():
     logo_path = "Lavie.png"
-    col_left, col_center, col_right = st.columns([1, 2, 1])
-    try:
-        st.image(logo_path, width=1100)
-    except Exception:
-        st.warning(f"Logo '{logo_path}' não encontrada. Verifique se o arquivo está no repositório.")
+
+    col_left, col_center, col_right = st.columns([1, 2, 1]) 
+
+    with col_center:
+        try:
+            st.image(logo_path, width=1100) 
+        except Exception:
+            st.warning(f"Logo '{logo_path}' não encontrada. Verifique se o arquivo está no repositório.")
+        
         
     st.title("Controle de Patrimônio - Acesso por Obra")
     st.write("---")
@@ -314,3 +318,4 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
