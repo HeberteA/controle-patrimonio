@@ -123,7 +123,7 @@ def app_principal():
     is_admin = st.session_state.is_admin
     logo_path = "Lavie.png" 
     try:
-        st.sidebar.image(logo_path, width=250) 
+        st.sidebar.image(logo_path, width=400) 
     except Exception:
         pass
 
@@ -385,6 +385,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
