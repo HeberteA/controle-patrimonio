@@ -132,6 +132,8 @@ def app_principal():
         st.sidebar.info("Você está logado como **Administrador**.")
     else:
         st.sidebar.info(f"Você está logado na obra: **{st.session_state.selected_obra}**")
+    
+    st.sidebar.write("---")
 
     if st.sidebar.button("Sair / Trocar Obra"):
         st.session_state.logged_in = False
@@ -140,8 +142,7 @@ def app_principal():
         st.session_state.admin_login_attempt = False
         st.cache_data.clear()
         st.rerun()
-    
-    st.sidebar.write("---")
+        
     try:
         caminho_imagem = "Lavie.png"
         img_base64 = get_img_as_base64(caminho_imagem)
@@ -385,6 +386,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
