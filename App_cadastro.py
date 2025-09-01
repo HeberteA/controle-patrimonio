@@ -141,14 +141,13 @@ def app_principal():
         col1, col2 = st.columns(2)
         with col1:
             nome_produto = st.text_input("Nome do Produto*")
-            num_tombamento_manual = st.text_input("N° de Tombamento (Opcional, deixa em branco para automático)")
+            num_tombamento_manual = st.text_input("N° de Tombamento (Opcional)")
             num_nota_fiscal = st.text_input("N° da Nota Fiscal*")
             valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
             status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
         with col2:
             especificacoes = st.text_area("Especificações")
             observacoes = st.text_area("Observações (Opcional)")
-            ## ALTERADO - Campos separados
             local_uso = st.text_input("Local de Uso*")
             responsavel = st.text_input("Responsável (Opcional)")
         
@@ -181,7 +180,7 @@ def app_principal():
                     novo_item_df = pd.DataFrame([{
                         OBRA_COL: obra_logada, TOMBAMENTO_COL: num_tombamento_final,
                         NOME_COL: nome_produto, ESPEC_COL: especificacoes, OBS_COL: observacoes,
-                        LOCAL_COL: local_uso, RESPONSAVEL_COL: responsavel, ## ALTERADO
+                        LOCAL_COL: local_uso, RESPONSAVEL_COL: responsavel, 
                         NF_NUM_COL: num_nota_fiscal, NF_LINK_COL: link_nota_fiscal, 
                         VALOR_COL: valor_produto, STATUS_COL: status_selecionado
                     }])
@@ -194,11 +193,141 @@ def app_principal():
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (*).")
     
-    # ... O resto do seu código (Gerenciar Itens, etc.) precisa ser adaptado para usar 'dados_da_obra' em vez de 'existing_data'
-    # ... e também os novos campos de Local de Uso e Responsável no formulário de edição.
+st.header("Itens Cadastrados", divider='rainbow')
+if not existing_data.empty:
+    col_filtro1, col_filtro2 = st.columns(2)
+    filtro_obra = col_filtro1.selectbox("Filtrar por Obra", ["Todas"] + sorted(list(existing_data[OBRA_COL].unique())))
+    filtro_status = col_filtro2.selectbox("Filtrar por Status", ["Todos"] + sorted(list(existing_data[STATUS_COL].unique())))
 
-# --- CONTROLE DE FLUXO PRINCIPAL ---
+    dados_filtrados = existing_data
+    if filtro_obra != "Todas": dados_filtrados = dados_filtrados[dados_filtrados[OBRA_COL] == filtro_obra]
+    if filtro_status != "Todos": dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
+    
+    st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
+        NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
+    })
+
+st.header("Itens Cadastrados", divider='rainbow')
+    # Usa 'dados_da_obra' para garantir que apenas itens da obra logada sejam mostrados
+    if not dados_da_obra.empty:
+        # O filtro de status agora só mostra opções relevantes para a obra atual
+        filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
+
+        dados_filtrados = dados_da_obra
+        if filtro_status != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
+        
+        st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
+            NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
+        })
+    else:
+        st.info("Nenhum item cadastrado para esta obra ainda.")
+
+
+    st.header("Gerenciar Itens Cadastrados", divider='rainbow')
+    # Também usa 'dados_da_obra' para listar apenas itens da obra logada
+    if not dados_da_obra.empty:
+        required_cols = [TOMBAMENTO_COL, NOME_COL]
+        if all(col in dados_da_obra.columns for col in required_cols):
+            
+            dados_da_obra[TOMBAMENTO_COL] = dados_da_obra[TOMBAMENTO_COL].astype(str)
+            df_to_sort = dados_da_obra.copy()
+            temp_col_name = '_tombamento_numeric'
+            df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
+            sorted_data = df_to_sort.sort_values(by=[temp_col_name])
+            sorted_data = sorted_data.drop(columns=[temp_col_name])
+            
+            lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for index, row in sorted_data.iterrows()]
+            
+            item_selecionado_gerenciar = st.selectbox(
+                "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
+            )
+
+            if item_selecionado_gerenciar:
+                tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
+                
+                col_edit, col_delete = st.columns(2)
+                if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
+                    st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+                    st.session_state.confirm_delete = False
+                    st.rerun()
+                if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
+                    st.session_state.confirm_delete = True
+                    st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+                    st.rerun()
+                
+                if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_logada):
+                    tomb, obra = st.session_state.edit_item_id
+                    st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
+                    c1, c2 = st.columns(2)
+                    if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
+                        # A remoção é feita na base de dados completa (existing_data)
+                        condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL].astype(str) == tomb))
+                        df_sem_item = existing_data[condicao]
+                        conn.update(worksheet="Página1", data=df_sem_item)
+                        st.success(f"Item {tomb} da obra {obra} removido!")
+                        st.session_state.confirm_delete = False
+                        st.session_state.edit_item_id = None
+                        st.cache_data.clear()
+                        st.rerun()
+                    if c2.button("Não, cancelar remoção", use_container_width=True):
+                        st.session_state.confirm_delete = False
+                        st.session_state.edit_item_id = None
+                        st.rerun()
+
+
+if st.session_state.edit_item_id and not st.session_state.confirm_delete:
+    tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
+    item_data_list = existing_data[(existing_data[TOMBAMENTO_COL] == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
+    
+    if not item_data_list.empty:
+        item_data = item_data_list.iloc[0]
+
+        with st.form("edit_form"):
+            st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
+            
+            tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL} ", value=item_data.get(TOMBAMENTO_COL, ""))
+            status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data.get(STATUS_COL)) if item_data.get(STATUS_COL) in lista_status else 0)
+            nome_edit = st.text_input(NOME_COL, value=item_data.get(NOME_COL, ""))
+            num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL} ", value=item_data.get(NF_NUM_COL, ""))
+            especificacoes_edit = st.text_area(ESPEC_COL, value=item_data.get(ESPEC_COL, ""))
+            observacoes_edit = st.text_area(OBS_COL, value=item_data.get(OBS_COL, ""))
+            local_edit = st.text_input(LOCAL_COL, value=item_data.get(LOCAL_COL, ""))
+            valor_edit = st.number_input(f"{VALOR_COL} (R$)", min_value=0.0, format="%.2f", value=float(item_data.get(VALOR_COL, 0)))
+            
+            submitted_edit = st.form_submit_button("💾 Salvar Alterações")
+            if submitted_edit:
+                if num_nota_fiscal_edit and tomb_edit_novo:
+                    condicao_outro_item = (existing_data[OBRA_COL] == obra_edit_key) & \
+                                          (existing_data[TOMBAMENTO_COL] == tomb_edit_novo) & \
+                                          (existing_data.index != item_data.name)
+                    
+                    if not existing_data[condicao_outro_item].empty:
+                        st.error(f"Erro: O N° de Tombamento '{tomb_edit_novo}' já existe para outro item nesta obra.")
+                    else:
+                        idx_to_update = item_data.name
+                        existing_data.loc[idx_to_update, TOMBAMENTO_COL] = tomb_edit_novo
+                        existing_data.loc[idx_to_update, STATUS_COL] = status_edit
+                        existing_data.loc[idx_to_update, NOME_COL] = nome_edit
+                        existing_data.loc[idx_to_update, NF_NUM_COL] = num_nota_fiscal_edit
+                        existing_data.loc[idx_to_update, ESPEC_COL] = especificacoes_edit
+                        existing_data.loc[idx_to_update, OBS_COL] = observacoes_edit
+                        existing_data.loc[idx_to_update, LOCAL_COL] = local_edit
+                        existing_data.loc[idx_to_update, VALOR_COL] = valor_edit
+                        
+                        conn.update(worksheet="Página1", data=existing_data)
+                        st.success(f"Item {tomb_edit_novo} atualizado com sucesso!")
+                        st.session_state.edit_item_id = None
+                        st.cache_data.clear()
+                        st.rerun()
+                else:
+                    st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
+    else:
+        st.error("O item selecionado para edição não foi encontrado.")
+        st.session_state.edit_item_id = None
+        st.rerun()
 if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
