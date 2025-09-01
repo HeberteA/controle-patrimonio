@@ -123,7 +123,7 @@ def app_principal():
     is_admin = st.session_state.is_admin
     logo_path = "Lavie.png" 
     try:
-        st.sidebar.image(logo_path, width=150) 
+        st.sidebar.image(logo_path, width=250) 
     except Exception:
         pass
 
@@ -276,7 +276,7 @@ def app_principal():
         st.info("Nenhum item cadastrado para a obra selecionada ainda.")
 
     if is_admin:
-        st.header("Gerenciar Itens Cadastrados (Admin)", divider='rainbow')
+        st.header("Gerenciar Itens Cadastrados", divider='rainbow')
         if not dados_da_obra.empty:
             required_cols = [TOMBAMENTO_COL, NOME_COL]
             if all(col in dados_da_obra.columns for col in required_cols):
@@ -385,6 +385,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
