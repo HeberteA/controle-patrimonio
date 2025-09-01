@@ -224,56 +224,54 @@ st.header("Itens Cadastrados", divider='rainbow')
         st.info("Nenhum item cadastrado para esta obra ainda.")
 
 
-    st.header("Gerenciar Itens Cadastrados", divider='rainbow')
-    # Também usa 'dados_da_obra' para listar apenas itens da obra logada
-    if not dados_da_obra.empty:
-        required_cols = [TOMBAMENTO_COL, NOME_COL]
-        if all(col in dados_da_obra.columns for col in required_cols):
+st.header("Gerenciar Itens Cadastrados", divider='rainbow')
+if not dados_da_obra.empty:
+    required_cols = [TOMBAMENTO_COL, NOME_COL]
+    if all(col in dados_da_obra.columns for col in required_cols):
             
-            dados_da_obra[TOMBAMENTO_COL] = dados_da_obra[TOMBAMENTO_COL].astype(str)
-            df_to_sort = dados_da_obra.copy()
-            temp_col_name = '_tombamento_numeric'
-            df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
-            sorted_data = df_to_sort.sort_values(by=[temp_col_name])
-            sorted_data = sorted_data.drop(columns=[temp_col_name])
+        dados_da_obra[TOMBAMENTO_COL] = dados_da_obra[TOMBAMENTO_COL].astype(str)
+        df_to_sort = dados_da_obra.copy()
+        temp_col_name = '_tombamento_numeric'
+        df_to_sort[temp_col_name] = pd.to_numeric(df_to_sort[TOMBAMENTO_COL], errors='coerce')
+        sorted_data = df_to_sort.sort_values(by=[temp_col_name])
+        sorted_data = sorted_data.drop(columns=[temp_col_name])
             
-            lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for index, row in sorted_data.iterrows()]
+        lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for index, row in sorted_data.iterrows()]
             
-            item_selecionado_gerenciar = st.selectbox(
-                "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
-            )
+        item_selecionado_gerenciar = st.selectbox(
+            "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
+        )
 
-            if item_selecionado_gerenciar:
-                tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
+        if item_selecionado_gerenciar:
+            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0]
                 
-                col_edit, col_delete = st.columns(2)
-                if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-                    st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+            col_edit, col_delete = st.columns(2)
+            if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+                st.session_state.confirm_delete = False
+                st.rerun()
+            if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
+                st.session_state.confirm_delete = True
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+                st.rerun()
+                
+            if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_logada):
+                tomb, obra = st.session_state.edit_item_id
+                st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
+                c1, c2 = st.columns(2)
+                if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
+                    condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL].astype(str) == tomb))
+                    df_sem_item = existing_data[condicao]
+                    conn.update(worksheet="Página1", data=df_sem_item)
+                    st.success(f"Item {tomb} da obra {obra} removido!")
                     st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.cache_data.clear()
                     st.rerun()
-                if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
-                    st.session_state.confirm_delete = True
-                    st.session_state.edit_item_id = (tombamento_selecionado, obra_logada)
+                if c2.button("Não, cancelar remoção", use_container_width=True):
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
                     st.rerun()
-                
-                if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_logada):
-                    tomb, obra = st.session_state.edit_item_id
-                    st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-                    c1, c2 = st.columns(2)
-                    if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
-                        # A remoção é feita na base de dados completa (existing_data)
-                        condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL].astype(str) == tomb))
-                        df_sem_item = existing_data[condicao]
-                        conn.update(worksheet="Página1", data=df_sem_item)
-                        st.success(f"Item {tomb} da obra {obra} removido!")
-                        st.session_state.confirm_delete = False
-                        st.session_state.edit_item_id = None
-                        st.cache_data.clear()
-                        st.rerun()
-                    if c2.button("Não, cancelar remoção", use_container_width=True):
-                        st.session_state.confirm_delete = False
-                        st.session_state.edit_item_id = None
-                        st.rerun()
 
 
 if st.session_state.edit_item_id and not st.session_state.confirm_delete:
@@ -330,4 +328,5 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
