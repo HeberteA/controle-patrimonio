@@ -419,8 +419,8 @@ def app_principal():
                                     st.session_state.edit_item_id = None
                                     st.cache_data.clear()
                                     st.rerun()
-                                else:
-                                    st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
+                            else:
+                                st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
                 else:
                     st.error("O item selecionado para edição não foi encontrado.")
                     st.session_state.edit_item_id = None
@@ -430,6 +430,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
