@@ -217,8 +217,8 @@ def app_principal():
     with st.form("cadastro_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            nome_produto = st.text_input("Nome do Produto*")
-            num_tombamento_manual = st.text_input("N° de Tombamento (Opcional)")
+            nome_produto = st.text_input("Nome do Produto")
+            num_tombamento_manual = st.text_input("N° de Tombamento")
             num_nota_fiscal = st.text_input("N° da Nota Fiscal*")
             valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
             status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
