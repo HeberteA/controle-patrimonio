@@ -82,7 +82,7 @@ def tela_de_login():
         st.markdown(
             f"""
             <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="950">
+                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="900">
             </div>
             """,
             unsafe_allow_html=True,
@@ -138,12 +138,13 @@ def app_principal():
         st.sidebar.info("Logado como **Administrador**.")
     else:
         st.sidebar.info(f"Logado na obra: **{st.session_state.selected_obra}**")
+    st.sidebar.write("---")
     if st.sidebar.button("Sair / Trocar Obra"):
         for key in st.session_state.keys():
             del st.session_state[key]
         st.cache_data.clear()
         st.rerun()
-    st.sidebar.write("---")
+
     try:
         caminho_imagem = "Lavie.png"
         img_base64 = get_img_as_base64(caminho_imagem)
@@ -223,15 +224,15 @@ def app_principal():
             status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
         with col2:
             especificacoes = st.text_area("Especificações")
-            observacoes = st.text_area("Observações (Opcional)")
+            observacoes = st.text_area("Observações")
             local_uso = st.text_input("Local de Uso*")
-            responsavel = st.text_input("Responsável (Opcional)")
+            responsavel = st.text_input("Responsável ")
         
-        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal (Opcional)", type="pdf")
+        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal ", type="pdf")
         submitted = st.form_submit_button("✔️ Cadastrar Item")
 
         if submitted:
-            if nome_produto and num_nota_fiscal and local_uso and obra_para_cadastro:
+            if nome_produto and num_nota_fiscal and local_uso and responsavel:
                 input_limpo = num_tombamento_manual.strip() if num_tombamento_manual else ""
                 num_tombamento_final = ""
                 is_valid = False
@@ -430,6 +431,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
