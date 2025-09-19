@@ -4,3 +4,7 @@ gspread
 gspread-dataframe
 google-auth-oauthlib
 st-gsheets-connection
+google-auth-httplib2
+google-api-python-client
+
+
