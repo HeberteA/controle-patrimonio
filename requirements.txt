@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 streamlit
 pandas
 gspread
@@ -8,3 +9,15 @@ google-auth-httplib2
 google-api-python-client
 
 
+=======
+streamlit
+pandas
+gspread
+gspread-dataframe
+google-auth-oauthlib
+st-gsheets-connection
+google-auth-httplib2
+google-api-python-client
+
+
+>>>>>>> 936899740dae087ef698c67248c037782b92b8c3
