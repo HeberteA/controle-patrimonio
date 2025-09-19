@@ -302,134 +302,135 @@ def app_principal():
                 item_selecionado_gerenciar = st.selectbox("Selecione um item para Gerenciar", options=lista_itens, index=None, placeholder="Escolha um item...")
                 
                 if item_selecionado_gerenciar:
-            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
-            obra_do_item = obra_para_cadastro if not is_admin or obra_selecionada_admin != "Todas" else dados_da_obra[dados_da_obra[TOMBAMENTO_COL] == tombamento_selecionado][OBRA_COL].iloc[0]
+                    tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
+                    obra_do_item = obra_para_cadastro if not is_admin or obra_selecionada_admin != "Todas" else dados_da_obra[dados_da_obra[TOMBAMENTO_COL] == tombamento_selecionado][OBRA_COL].iloc[0]
 
-            col_mov, col_edit, col_delete = st.columns(3)
-
-            if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
-                st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.edit_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
-
-            if col_edit.button("✏️ Editar Item", use_container_width=True):
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.movement_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
-
-            if col_delete.button("🗑️ Remover Item", use_container_width=True):
-                st.session_state.confirm_delete = True
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.movement_item_id = None
-                st.rerun()
-
-            if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
-                with st.form("movement_form"):
-                    st.subheader(f"Registrar Movimentação para: {item_selecionado_gerenciar}")
-                    tipo_mov = st.radio("Tipo de Movimentação", ["Entrada", "Saída"], horizontal=True)
-                    responsavel_mov = st.text_input("Responsável pela Movimentação")
-                    obs_mov = st.text_area("Observações da Movimentação")
-                    submitted_mov = st.form_submit_button("✔️ Registrar Movimentação")
-                    
-                    if submitted_mov and responsavel_mov:
-                        nova_movimentacao = pd.DataFrame([{
-                            "Obra": obra_do_item,
-                            "N° de Tombamento": tombamento_selecionado,
-                            "Tipo de Movimentação": tipo_mov,
-                            "Data e Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "Responsável pela Movimentação": responsavel_mov,
-                            "Observações": obs_mov
-                        }])
-
-                        df_movimentacoes_atualizado = pd.concat([df_movimentacoes, nova_movimentacao], ignore_index=True)
-                        conn.update(worksheet="Movimentacoes", data=df_movimentacoes_atualizado)
-
-                        idx_to_update = existing_data[(existing_data[OBRA_COL] == obra_do_item) & (existing_data[TOMBAMENTO_COL].astype(str) == tombamento_selecionado)].index
-                        if not idx_to_update.empty:
-                            novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo"
-                            existing_data.loc[idx_to_update, STATUS_COL] = novo_status
-                            conn.update(worksheet="Página1", data=existing_data)
-                        
-                        st.success("Movimentação registrada com sucesso!")
-                        st.session_state.movement_item_id = None
-                        st.cache_data.clear()
+                    col_mov, col_edit, col_delete = st.columns(3)
+            
+                    if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
+                        st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
+                        st.session_state.edit_item_id = None
+                        st.session_state.confirm_delete = False
                         st.rerun()
-                    elif submitted_mov:
-                        st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
-            st.write("---")
-            st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
-            historico_item = df_movimentacoes[
-                (df_movimentacoes["Obra"] == obra_do_item) &
-                (df_movimentacoes["N° de Tombamento"].astype(str) == tombamento_selecionado)
-            ].sort_values(by="Data e Hora", ascending=False)
-            
-            if not historico_item.empty:
-                st.dataframe(historico_item, hide_index=True, use_container_width=True)
-            else:
-                st.info("Nenhuma movimentação registrada para este item.")
-            
-        if st.session_state.edit_item_id and not st.session_state.confirm_delete:
-            tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
-            item_data_list = existing_data[(existing_data[TOMBAMENTO_COL].astype(str) == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
-            
-            if not item_data_list.empty:
-                item_data = item_data_list.iloc[0]
 
-                with st.form("edit_form"):
-                    st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
+                    if col_edit.button("✏️ Editar Item", use_container_width=True):
+                        st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                        st.session_state.movement_item_id = None
+                        st.session_state.confirm_delete = False
+                        st.rerun()
+
+                    if col_delete.button("🗑️ Remover Item", use_container_width=True):
+                        st.session_state.confirm_delete = True
+                        st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                        st.session_state.movement_item_id = None
+                        st.rerun()
+
+                    if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
+                        with st.form("movement_form"):
+                            st.subheader(f"Registrar Movimentação para: {item_selecionado_gerenciar}")
+                            tipo_mov = st.radio("Tipo de Movimentação", ["Entrada", "Saída"], horizontal=True)
+                            responsavel_mov = st.text_input("Responsável pela Movimentação")
+                            obs_mov = st.text_area("Observações da Movimentação")
+                            submitted_mov = st.form_submit_button("✔️ Registrar Movimentação")
                     
-                    tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL}", value=item_data.get(TOMBAMENTO_COL, ""))
-                    status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data.get(STATUS_COL)) if item_data.get(STATUS_COL) in lista_status else 0)
-                    nome_edit = st.text_input(NOME_COL, value=item_data.get(NOME_COL, ""))
-                    num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL}", value=item_data.get(NF_NUM_COL, ""))
-                    especificacoes_edit = st.text_area(ESPEC_COL, value=item_data.get(ESPEC_COL, ""))
-                    observacoes_edit = st.text_area(OBS_COL, value=item_data.get(OBS_COL, ""))
-                    local_edit = st.text_input(LOCAL_COL, value=item_data.get(LOCAL_COL, ""))
-                    responsavel_edit = st.text_input(RESPONSAVEL_COL, value=item_data.get(RESPONSAVEL_COL, ""))
-                    valor_edit = st.number_input(f"{VALOR_COL} (R$)", min_value=0.0, format="%.2f", value=float(item_data.get(VALOR_COL, 0)))
-                    
-                    submitted_edit = st.form_submit_button("💾 Salvar Alterações")
-                    if submitted_edit:
-                        if num_nota_fiscal_edit and tomb_edit_novo:
-                            edit_input_limpo = tomb_edit_novo.strip()
-                            coluna_limpa_edit = existing_data[TOMBAMENTO_COL].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                            
-                            condicao_outro_item = (existing_data[OBRA_COL] == obra_edit_key) & \
-                                                  (coluna_limpa_edit == edit_input_limpo) & \
-                                                  (existing_data.index != item_data.name)
-                            
-                            if not existing_data[condicao_outro_item].empty:
-                                st.error(f"Erro: O N° de Tombamento '{edit_input_limpo}' já existe para outro item nesta obra.")
-                            else:
-                                idx_to_update = item_data.name
-                                existing_data.loc[idx_to_update, TOMBAMENTO_COL] = edit_input_limpo
-                                existing_data.loc[idx_to_update, STATUS_COL] = status_edit
-                                existing_data.loc[idx_to_update, NOME_COL] = nome_edit
-                                existing_data.loc[idx_to_update, NF_NUM_COL] = num_nota_fiscal_edit
-                                existing_data.loc[idx_to_update, ESPEC_COL] = especificacoes_edit
-                                existing_data.loc[idx_to_update, OBS_COL] = observacoes_edit
-                                existing_data.loc[idx_to_update, LOCAL_COL] = local_edit
-                                existing_data.loc[idx_to_update, RESPONSAVEL_COL] = responsavel_edit
-                                existing_data.loc[idx_to_update, VALOR_COL] = valor_edit
-                                
-                                conn.update(worksheet="Página1", data=existing_data)
-                                st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
-                                st.session_state.edit_item_id = None
+                            if submitted_mov and responsavel_mov:
+                                nova_movimentacao = pd.DataFrame([{
+                                    "Obra": obra_do_item,
+                                    "N° de Tombamento": tombamento_selecionado,
+                                    "Tipo de Movimentação": tipo_mov,
+                                    "Data e Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                    "Responsável pela Movimentação": responsavel_mov,
+                                    "Observações": obs_mov
+                                }])
+                                df_movimentacoes_atualizado = pd.concat([df_movimentacoes, nova_movimentacao], ignore_index=True)
+                                conn.update(worksheet="Movimentacoes", data=df_movimentacoes_atualizado)
+                        
+                                idx_to_update = existing_data[(existing_data[OBRA_COL] == obra_do_item) & (existing_data[TOMBAMENTO_COL].astype(str) == tombamento_selecionado)].index
+                                if not idx_to_update.empty:
+                                    novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo" 
+                                    existing_data.loc[idx_to_update, STATUS_COL] = novo_status
+                                    conn.update(worksheet="Página1", data=existing_data)
+                        
+                                st.success("Movimentação registrada com sucesso!")
+                                st.session_state.movement_item_id = None
                                 st.cache_data.clear()
                                 st.rerun()
-                        else:
-                            st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
-            else:
-                st.error("O item selecionado para edição não foi encontrado.")
-                st.session_state.edit_item_id = None
-                st.rerun()
+                            elif submitted_mov:
+                                st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
+                                
+                    st.write("---")
+                    st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
+                    historico_item = df_movimentacoes[
+                        (df_movimentacoes["Obra"] == obra_do_item) &
+                        (df_movimentacoes["N° de Tombamento"].astype(str) == tombamento_selecionado)
+                    ].sort_values(by="Data e Hora", ascending=False)
+            
+                    if not historico_item.empty:
+                        st.dataframe(historico_item, hide_index=True, use_container_width=True)
+                    else:
+                        st.info("Nenhuma movimentação registrada para este item.")
+            
+            if st.session_state.edit_item_id and not st.session_state.confirm_delete:
+                tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
+                item_data_list = existing_data[(existing_data[TOMBAMENTO_COL].astype(str) == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
+            
+                if not item_data_list.empty:
+                    item_data = item_data_list.iloc[0]
+
+                    with st.form("edit_form"):
+                        st.subheader(f"Editando Item: {tomb_edit_original} (Obra: {obra_edit_key})")
+                    
+                        tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL}", value=item_data.get(TOMBAMENTO_COL, ""))
+                        status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data.get(STATUS_COL)) if item_data.get(STATUS_COL) in lista_status else 0)
+                        nome_edit = st.text_input(NOME_COL, value=item_data.get(NOME_COL, ""))
+                        num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL}", value=item_data.get(NF_NUM_COL, ""))
+                        especificacoes_edit = st.text_area(ESPEC_COL, value=item_data.get(ESPEC_COL, ""))
+                        observacoes_edit = st.text_area(OBS_COL, value=item_data.get(OBS_COL, ""))
+                        local_edit = st.text_input(LOCAL_COL, value=item_data.get(LOCAL_COL, ""))
+                        responsavel_edit = st.text_input(RESPONSAVEL_COL, value=item_data.get(RESPONSAVEL_COL, ""))
+                        valor_edit = st.number_input(f"{VALOR_COL} (R$)", min_value=0.0, format="%.2f", value=float(item_data.get(VALOR_COL, 0)))
+                    
+                        submitted_edit = st.form_submit_button("💾 Salvar Alterações")
+                        if submitted_edit:
+                            if num_nota_fiscal_edit and tomb_edit_novo:
+                                edit_input_limpo = tomb_edit_novo.strip()
+                                coluna_limpa_edit = existing_data[TOMBAMENTO_COL].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                            
+                                condicao_outro_item = (existing_data[OBRA_COL] == obra_edit_key) & \
+                                                      (coluna_limpa_edit == edit_input_limpo) & \
+                                                      (existing_data.index != item_data.name)
+                            
+                                if not existing_data[condicao_outro_item].empty:
+                                    st.error(f"Erro: O N° de Tombamento '{edit_input_limpo}' já existe para outro item nesta obra.")
+                                else:
+                                    idx_to_update = item_data.name
+                                    existing_data.loc[idx_to_update, TOMBAMENTO_COL] = edit_input_limpo
+                                    existing_data.loc[idx_to_update, STATUS_COL] = status_edit
+                                    existing_data.loc[idx_to_update, NOME_COL] = nome_edit
+                                    existing_data.loc[idx_to_update, NF_NUM_COL] = num_nota_fiscal_edit
+                                    existing_data.loc[idx_to_update, ESPEC_COL] = especificacoes_edit
+                                    existing_data.loc[idx_to_update, OBS_COL] = observacoes_edit
+                                    existing_data.loc[idx_to_update, LOCAL_COL] = local_edit
+                                    existing_data.loc[idx_to_update, RESPONSAVEL_COL] = responsavel_edit
+                                    existing_data.loc[idx_to_update, VALOR_COL] = valor_edit
+                                
+                                    conn.update(worksheet="Página1", data=existing_data)
+                                    st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
+                                    st.session_state.edit_item_id = None
+                                    st.cache_data.clear()
+                                    st.rerun()
+                                else:
+                                    st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}' são obrigatórios.")
+                else:
+                    st.error("O item selecionado para edição não foi encontrado.")
+                    st.session_state.edit_item_id = None
+                    st.rerun()
 
 if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
