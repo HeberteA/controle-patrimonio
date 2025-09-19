@@ -225,7 +225,7 @@ def app_principal():
         with col2:
             especificacoes = st.text_area("Especificações")
             observacoes = st.text_area("Observações")
-            local_uso = st.text_input("Local de Uso*")
+            local_uso = st.text_input("Local de Uso")
             responsavel = st.text_input("Responsável ")
         
         uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal ", type="pdf")
@@ -431,6 +431,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
