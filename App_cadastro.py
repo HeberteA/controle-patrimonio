@@ -6,13 +6,13 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
 import base64
+from datetime import datetime
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
     page_icon="Lavie1.png",
     layout="wide"
 )
-
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'is_admin' not in st.session_state:
@@ -25,6 +25,8 @@ if 'edit_item_id' not in st.session_state:
     st.session_state.edit_item_id = None
 if 'confirm_delete' not in st.session_state:
     st.session_state.confirm_delete = False
+if 'movement_item_id' not in st.session_state: 
+    st.session_state.movement_item_id = None
 
 @st.cache_data
 def get_img_as_base64(file):
@@ -50,6 +52,11 @@ COLUNAS_PATRIMONIO = [
     NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL
 ]
 
+COLUNAS_MOVIMENTACOES = [
+    "Obra", "N° de Tombamento", "Tipo de Movimentação", "Data e Hora",
+    "Responsável pela Movimentação", "Observações"
+]
+
 def upload_to_gdrive(file_data, file_name):
     try:
         scopes = ['https://www.googleapis.com/auth/drive']
@@ -67,6 +74,7 @@ def upload_to_gdrive(file_data, file_name):
         return None
 
 conn = st.connection("gsheets", type=GSheetsConnection)
+
 def tela_de_login():
     logo_path = "Lavie.png"
     try:
@@ -74,13 +82,13 @@ def tela_de_login():
         st.markdown(
             f"""
             <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="900">
+                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="200">
             </div>
             """,
             unsafe_allow_html=True,
         )
     except Exception:
-        st.warning(f"Logo '{logo_path}' não encontrada. Verifique se o arquivo está no repositório.")
+        st.warning(f"Logo '{logo_path}' não encontrada.")
     
     st.title("Controle de Patrimônio")
 
@@ -92,9 +100,7 @@ def tela_de_login():
             obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
             lista_obras = obras_df["Nome da Obra"].dropna().tolist()
             codigos_obras = st.secrets.obra_codes
-
             obra_selecionada = st.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
-            
             if obra_selecionada:
                 codigo_acesso = st.text_input("Código de Acesso", type="password", key="obra_password")
                 if st.button("Entrar na Obra"):
@@ -121,35 +127,30 @@ def tela_de_login():
 
 def app_principal():
     is_admin = st.session_state.is_admin
-    logo_path = "Lavie.png" 
+    
+    logo_path = "Lavie.png"
     try:
-        st.sidebar.image(logo_path, width=400) 
+        st.sidebar.image(logo_path, width=150)
     except Exception:
         pass
-
     st.sidebar.header("Navegação")
     if is_admin:
-        st.sidebar.info("Você está logado como **Administrador**.")
+        st.sidebar.info("Logado como **Administrador**.")
     else:
-        st.sidebar.info(f"Você está logado na obra: **{st.session_state.selected_obra}**")
-    
-    st.sidebar.write("---")
-
+        st.sidebar.info(f"Logado na obra: **{st.session_state.selected_obra}**")
     if st.sidebar.button("Sair / Trocar Obra"):
-        st.session_state.logged_in = False
-        st.session_state.is_admin = False
-        st.session_state.selected_obra = None
-        st.session_state.admin_login_attempt = False
+        for key in st.session_state.keys():
+            del st.session_state[key]
         st.cache_data.clear()
         st.rerun()
-        
+    st.sidebar.write("---")
     try:
         caminho_imagem = "Lavie.png"
         img_base64 = get_img_as_base64(caminho_imagem)
         tipo_imagem = "image/png"
         st.markdown(f"""<style>[data-testid="stBlockContainer"]:first-child {{background-image: url("data:{tipo_imagem};base64,{img_base64}"); background-size: cover; background-position: center; border-radius: 10px; padding: 2rem;}} [data-testid="stBlockContainer"]:first-child h1, [data-testid="stBlockContainer"]:first-child p {{color: white;}} </style>""", unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning("Arquivo 'Lavie.png' não encontrado.")
+        st.warning("Arquivo de fundo 'Lavie.png' não encontrado.")
 
     st.title("📦 Sistema de Cadastro de Patrimônio")
 
@@ -160,19 +161,26 @@ def app_principal():
             lista_status = status_df["Nome do Status"].dropna().tolist()
             obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
             lista_obras = obras_df["Nome da Obra"].dropna().tolist()
-            patrimonio_df = conn.read(worksheet="Página1")
             
+            patrimonio_df = conn.read(worksheet="Página1")
             if patrimonio_df.empty:
                 patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
             else:
                 patrimonio_df = patrimonio_df.dropna(how="all")
                 patrimonio_df.columns = patrimonio_df.columns.str.strip()
-            return lista_status, lista_obras, patrimonio_df
+
+            movimentacoes_df = conn.read(worksheet="Movimentacoes")
+            if movimentacoes_df.empty:
+                movimentacoes_df = pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
+            else:
+                movimentacoes_df = movimentacoes_df.dropna(how="all")
+
+            return lista_status, lista_obras, patrimonio_df, movimentacoes_df
         except Exception as e:
             st.error(f"Erro ao ler a planilha: {e}")
-            return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO)
+            return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO), pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
 
-    lista_status, lista_obras_app, existing_data = carregar_dados_app()
+    lista_status, lista_obras_app, existing_data, df_movimentacoes = carregar_dados_app()
 
     if is_admin:
         st.sidebar.subheader("Visão do Administrador")
@@ -279,6 +287,7 @@ def app_principal():
     if is_admin:
         st.header("Gerenciar Itens Cadastrados", divider='rainbow')
         if not dados_da_obra.empty:
+            dados_da_obra[TOMBAMENTO_COL] = dados_da_obra[TOMBAMENTO_COL].astype(str)
             required_cols = [TOMBAMENTO_COL, NOME_COL]
             if all(col in dados_da_obra.columns for col in required_cols):
                 dados_da_obra[TOMBAMENTO_COL] = dados_da_obra[TOMBAMENTO_COL].astype(str)
@@ -288,44 +297,79 @@ def app_principal():
                 sorted_data = df_to_sort.sort_values(by=[temp_col_name])
                 sorted_data = sorted_data.drop(columns=[temp_col_name])
                 
-                lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for index, row in sorted_data.iterrows()]
+                lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for index, row in dados_da_obra.iterrows()]
+        
+                item_selecionado_gerenciar = st.selectbox("Selecione um item para Gerenciar", options=lista_itens, index=None, placeholder="Escolha um item...")
                 
-                item_selecionado_gerenciar = st.selectbox(
-                    "Selecione um item para Editar ou Remover", options=lista_itens, index=None, placeholder="Escolha um item..."
-                )
-
                 if item_selecionado_gerenciar:
-                    tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
-                    obra_do_item_selecionado = obra_selecionada_admin if obra_selecionada_admin != "Todas" else dados_da_obra.loc[dados_da_obra.apply(lambda row: f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" == item_selecionado_gerenciar, axis=1), OBRA_COL].iloc[0]
+            tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
+            obra_do_item = obra_para_cadastro if not is_admin or obra_selecionada_admin != "Todas" else dados_da_obra[dados_da_obra[TOMBAMENTO_COL] == tombamento_selecionado][OBRA_COL].iloc[0]
 
-                    col_edit, col_delete = st.columns(2)
-                    if col_edit.button("✏️ Editar Item Selecionado", use_container_width=True):
-                        st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-                        st.session_state.confirm_delete = False
-                        st.rerun()
-                    if col_delete.button("🗑️ Remover Item Selecionado", use_container_width=True):
-                        st.session_state.confirm_delete = True
-                        st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item_selecionado)
-                        st.rerun()
+            col_mov, col_edit, col_delete = st.columns(3)
+
+            if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
+                st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
+                st.session_state.edit_item_id = None
+                st.session_state.confirm_delete = False
+                st.rerun()
+
+            if col_edit.button("✏️ Editar Item", use_container_width=True):
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                st.session_state.movement_item_id = None
+                st.session_state.confirm_delete = False
+                st.rerun()
+
+            if col_delete.button("🗑️ Remover Item", use_container_width=True):
+                st.session_state.confirm_delete = True
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                st.session_state.movement_item_id = None
+                st.rerun()
+
+            if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
+                with st.form("movement_form"):
+                    st.subheader(f"Registrar Movimentação para: {item_selecionado_gerenciar}")
+                    tipo_mov = st.radio("Tipo de Movimentação", ["Entrada", "Saída"], horizontal=True)
+                    responsavel_mov = st.text_input("Responsável pela Movimentação")
+                    obs_mov = st.text_area("Observações da Movimentação")
+                    submitted_mov = st.form_submit_button("✔️ Registrar Movimentação")
                     
-                    if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item_selecionado):
-                        tomb, obra = st.session_state.edit_item_id
-                        st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-                        c1, c2 = st.columns(2)
-                        if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
-                            condicao = ~((existing_data[OBRA_COL] == obra) & (existing_data[TOMBAMENTO_COL].astype(str) == tomb))
-                            df_sem_item = existing_data[condicao]
-                            conn.update(worksheet="Página1", data=df_sem_item)
-                            st.success(f"Item {tomb} da obra {obra} removido!")
-                            st.session_state.confirm_delete = False
-                            st.session_state.edit_item_id = None
-                            st.cache_data.clear()
-                            st.rerun()
-                        if c2.button("Não, cancelar remoção", use_container_width=True):
-                            st.session_state.confirm_delete = False
-                            st.session_state.edit_item_id = None
-                            st.rerun()
+                    if submitted_mov and responsavel_mov:
+                        nova_movimentacao = pd.DataFrame([{
+                            "Obra": obra_do_item,
+                            "N° de Tombamento": tombamento_selecionado,
+                            "Tipo de Movimentação": tipo_mov,
+                            "Data e Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Responsável pela Movimentação": responsavel_mov,
+                            "Observações": obs_mov
+                        }])
 
+                        df_movimentacoes_atualizado = pd.concat([df_movimentacoes, nova_movimentacao], ignore_index=True)
+                        conn.update(worksheet="Movimentacoes", data=df_movimentacoes_atualizado)
+
+                        idx_to_update = existing_data[(existing_data[OBRA_COL] == obra_do_item) & (existing_data[TOMBAMENTO_COL].astype(str) == tombamento_selecionado)].index
+                        if not idx_to_update.empty:
+                            novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo"
+                            existing_data.loc[idx_to_update, STATUS_COL] = novo_status
+                            conn.update(worksheet="Página1", data=existing_data)
+                        
+                        st.success("Movimentação registrada com sucesso!")
+                        st.session_state.movement_item_id = None
+                        st.cache_data.clear()
+                        st.rerun()
+                    elif submitted_mov:
+                        st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
+            st.write("---")
+            st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
+            historico_item = df_movimentacoes[
+                (df_movimentacoes["Obra"] == obra_do_item) &
+                (df_movimentacoes["N° de Tombamento"].astype(str) == tombamento_selecionado)
+            ].sort_values(by="Data e Hora", ascending=False)
+            
+            if not historico_item.empty:
+                st.dataframe(historico_item, hide_index=True, use_container_width=True)
+            else:
+                st.info("Nenhuma movimentação registrada para este item.")
+            
         if st.session_state.edit_item_id and not st.session_state.confirm_delete:
             tomb_edit_original, obra_edit_key = st.session_state.edit_item_id
             item_data_list = existing_data[(existing_data[TOMBAMENTO_COL].astype(str) == str(tomb_edit_original)) & (existing_data[OBRA_COL] == obra_edit_key)]
@@ -386,6 +430,7 @@ if not st.session_state.logged_in:
     tela_de_login()
 else:
     app_principal()
+
 
 
 
