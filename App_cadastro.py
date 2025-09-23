@@ -126,98 +126,10 @@ def tela_de_login():
             else:
                 st.error("Senha de administrador incorreta.")
 
-def app_principal():
-    is_admin = st.session_state.is_admin
-    
-    with st.sidebar:
-        logo_path = "Lavie.png"
-        try:
-            st.image(logo_path, width=150)
-        except Exception:
-            pass
 
-        st.header("Navegação")
-        if is_admin:
-            st.info("Logado como **Administrador**.")
-        else:
-            st.info(f"Logado na obra: **{st.session_state.selected_obra}**")
-
-        menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens"]
         
-        selected_page = option_menu(
-            menu_title=None,
-            options=menu_options,
-            icons=["plus-circle-fill", "card-list", "pencil-square"],
-            menu_icon="cast",
-            default_index=0,
-        )
-
-        st.write("---")
-        if st.button("Sair / Trocar Obra"):
-            for key in st.session_state.keys():
-                del st.session_state[key]
-            st.cache_data.clear()
-            st.rerun()
-
-    try:
-        caminho_imagem = "Lavie.png"
-        img_base64 = get_img_as_base64(caminho_imagem)
-        tipo_imagem = "image/png"
-        st.markdown(f"""<style>[data-testid="stBlockContainer"]:first-child {{background-image: url("data:{tipo_imagem};base64,{img_base64}"); background-size: cover; background-position: center; border-radius: 10px; padding: 2rem;}} [data-testid="stBlockContainer"]:first-child h1, [data-testid="stBlockContainer"]:first-child p {{color: white;}} </style>""", unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.warning("Arquivo de fundo 'Lavie.png' não encontrado.")
-
-    st.title("📦 Sistema de Cadastro de Patrimônio")
-
-    @st.cache_data(ttl=5)
-    def carregar_dados_app():
-        try:
-            status_df = conn.read(worksheet="Status", usecols=[0], header=0)
-            lista_status = status_df["Nome do Status"].dropna().tolist()
-            obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
-            lista_obras = obras_df["Nome da Obra"].dropna().tolist()
-            
-            patrimonio_df = conn.read(worksheet="Página1")
-            if patrimonio_df.empty:
-                patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
-            else:
-                patrimonio_df = patrimonio_df.dropna(how="all")
-                patrimonio_df.columns = patrimonio_df.columns.str.strip()
-
-            movimentacoes_df = conn.read(worksheet="Movimentacoes")
-            if movimentacoes_df.empty:
-                movimentacoes_df = pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
-            else:
-                movimentacoes_df = movimentacoes_df.dropna(how="all")
-
-            return lista_status, lista_obras, patrimonio_df, movimentacoes_df
-        except Exception as e:
-            st.error(f"Erro ao ler a planilha: {e}")
-            return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO), pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
-
-    lista_status, lista_obras_app, existing_data, df_movimentacoes = carregar_dados_app()
-
-    if is_admin:
-        obra_selecionada_admin = st.sidebar.selectbox("Filtrar por Obra", ["Todas"] + lista_obras_app)
-        st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
-        if obra_selecionada_admin == "Todas":
-            dados_da_obra = existing_data
-        else:
-            dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_selecionada_admin].copy()
-    else:
-        obra_logada = st.session_state.selected_obra
-        st.subheader(f"Obra: **{obra_logada}**")
-        dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_logada].copy()
-    
-
-    def gerar_numero_tombamento_sequencial(obra_para_gerar):
-        if not obra_para_gerar: return None
-        itens = existing_data[existing_data[OBRA_COL] == obra_para_gerar]
-        if itens.empty: return "1"
-        numeros_numericos = pd.to_numeric(itens[TOMBAMENTO_COL], errors='coerce').dropna()
-        if numeros_numericos.empty: return "1"
-        return str(int(numeros_numericos.max()) + 1)
-
+def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
+    st.header("Cadastrar Novo Item", divider='rainbow')
     if selected_page == "Cadastrar Item":
         pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data)
         obra_para_cadastro = None
@@ -284,7 +196,9 @@ def app_principal():
                         st.rerun()
                 else:
                     st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
-
+                    
+def pagina_itens_cadastrados(is_admin, dados_da_obra):
+    st.header("Itens Cadastrados", divider='rainbow')
     elif selected_page == "Itens Cadastrados":
         pagina_itens_cadastrados(is_admin, dados_da_obra)
         if not dados_da_obra.empty:
@@ -298,7 +212,9 @@ def app_principal():
             })
         else:
             st.info("Nenhum item cadastrado para a obra selecionada ainda.")
-
+            
+def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista_status):
+    st.header("Gerenciar Itens Cadastrados", divider='rainbow')
     elif selected_page == "Gerenciar Itens":
         pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista_status)
         st.write("Abaixo estão os itens disponíveis para gerenciamento.")
@@ -442,7 +358,98 @@ def app_principal():
                 st.error("O item selecionado para edição não foi encontrado.")
                 st.session_state.edit_item_id = None
                 st.rerun()
+                
+def app_principal():
+    is_admin = st.session_state.is_admin
+    
+    with st.sidebar:
+        logo_path = "Lavie.png"
+        try:
+            st.image(logo_path, width=150)
+        except Exception:
+            pass
 
+        st.header("Navegação")
+        if is_admin:
+            st.info("Logado como **Administrador**.")
+        else:
+            st.info(f"Logado na obra: **{st.session_state.selected_obra}**")
+
+        menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens"]
+        
+        selected_page = option_menu(
+            menu_title=None,
+            options=menu_options,
+            icons=["plus-circle-fill", "card-list", "pencil-square"],
+            menu_icon="cast",
+            default_index=0,
+        )
+
+        st.write("---")
+        if st.button("Sair / Trocar Obra"):
+            for key in st.session_state.keys():
+                del st.session_state[key]
+            st.cache_data.clear()
+            st.rerun()
+
+    try:
+        caminho_imagem = "Lavie.png"
+        img_base64 = get_img_as_base64(caminho_imagem)
+        tipo_imagem = "image/png"
+        st.markdown(f"""<style>[data-testid="stBlockContainer"]:first-child {{background-image: url("data:{tipo_imagem};base64,{img_base64}"); background-size: cover; background-position: center; border-radius: 10px; padding: 2rem;}} [data-testid="stBlockContainer"]:first-child h1, [data-testid="stBlockContainer"]:first-child p {{color: white;}} </style>""", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning("Arquivo de fundo 'Lavie.png' não encontrado.")
+
+    st.title("📦 Sistema de Cadastro de Patrimônio")
+
+    @st.cache_data(ttl=5)
+    def carregar_dados_app():
+        try:
+            status_df = conn.read(worksheet="Status", usecols=[0], header=0)
+            lista_status = status_df["Nome do Status"].dropna().tolist()
+            obras_df = conn.read(worksheet="Obras", usecols=[0], header=0)
+            lista_obras = obras_df["Nome da Obra"].dropna().tolist()
+            
+            patrimonio_df = conn.read(worksheet="Página1")
+            if patrimonio_df.empty:
+                patrimonio_df = pd.DataFrame(columns=COLUNAS_PATRIMONIO)
+            else:
+                patrimonio_df = patrimonio_df.dropna(how="all")
+                patrimonio_df.columns = patrimonio_df.columns.str.strip()
+
+            movimentacoes_df = conn.read(worksheet="Movimentacoes")
+            if movimentacoes_df.empty:
+                movimentacoes_df = pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
+            else:
+                movimentacoes_df = movimentacoes_df.dropna(how="all")
+
+            return lista_status, lista_obras, patrimonio_df, movimentacoes_df
+        except Exception as e:
+            st.error(f"Erro ao ler a planilha: {e}")
+            return [], [], pd.DataFrame(columns=COLUNAS_PATRIMONIO), pd.DataFrame(columns=COLUNAS_MOVIMENTACOES)
+
+    lista_status, lista_obras_app, existing_data, df_movimentacoes = carregar_dados_app()
+
+    if is_admin:
+        obra_selecionada_admin = st.sidebar.selectbox("Filtrar por Obra", ["Todas"] + lista_obras_app)
+        st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
+        if obra_selecionada_admin == "Todas":
+            dados_da_obra = existing_data
+        else:
+            dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_selecionada_admin].copy()
+    else:
+        obra_logada = st.session_state.selected_obra
+        st.subheader(f"Obra: **{obra_logada}**")
+        dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_logada].copy()
+    
+
+    def gerar_numero_tombamento_sequencial(obra_para_gerar):
+        if not obra_para_gerar: return None
+        itens = existing_data[existing_data[OBRA_COL] == obra_para_gerar]
+        if itens.empty: return "1"
+        numeros_numericos = pd.to_numeric(itens[TOMBAMENTO_COL], errors='coerce').dropna()
+        if numeros_numericos.empty: return "1"
+        return str(int(numeros_numericos.max()) + 1)
 if not st.session_state.logged_in:
     tela_de_login()
 else:
