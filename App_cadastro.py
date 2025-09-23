@@ -287,7 +287,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                 st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
 
 def pagina_itens_cadastrados(is_admin, dados_da_obra):
-    st.header("Itens Cadastrados", divider='rainbow'
+    st.header("Itens Cadastrados", divider='rainbow')
     if not dados_da_obra.empty:
         filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
         dados_filtrados = dados_da_obra
