@@ -222,28 +222,34 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
             tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
             obra_do_item = dados_da_obra[dados_da_obra[TOMBAMENTO_COL].astype(str) == tombamento_selecionado][OBRA_COL].iloc[0]
             
+            # Define as colunas condicionalmente
             if not st.session_state.get('confirm_delete'):
                 col_mov, col_edit, col_delete = st.columns(3)
+                
+                # **CORREÇÃO**: A lógica dos botões agora está DENTRO do bloco onde as colunas são criadas
+                if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
+                    st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
+                    st.session_state.edit_item_id = None
+                    st.session_state.confirm_delete = False
+                    st.rerun()
+
+                if col_edit.button("✏️ Editar Item", use_container_width=True):
+                    st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                    st.session_state.movement_item_id = None
+                    st.session_state.confirm_delete = False
+                    st.rerun()
             else:
+                # Quando em modo de confirmação, só precisamos do container do botão de deletar
                 col_delete = st.container()
 
-            if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
-                st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.edit_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
-
-            if col_edit.button("✏️ Editar Item", use_container_width=True):
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.movement_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
-
+            # A lógica do botão de remover funciona em ambos os casos
             if col_delete.button("🗑️ Remover Item", use_container_width=True):
                 st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
                 st.session_state.confirm_delete = True
                 st.session_state.movement_item_id = None
                 st.rerun()
+
+            # Bloco de confirmação de exclusão
             if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item):
                 tomb, obra = st.session_state.edit_item_id
                 st.warning(f"**Atenção!** Tem certeza que deseja remover permanentemente o item **{tomb}** da obra **{obra}**?")
@@ -256,7 +262,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                     df_sem_item = existing_data[condicao]
                     conn.update(worksheet="Página1", data=df_sem_item)
                     st.success(f"Item {tomb} da obra {obra} removido!")
-                
+                    
                     st.session_state.confirm_delete = False
                     st.session_state.edit_item_id = None
                     st.cache_data.clear()
@@ -267,6 +273,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                     st.session_state.edit_item_id = None
                     st.rerun()
 
+            # Formulário de movimentação
             if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
                 with st.form("movement_form"):
                     st.subheader(f"Registrar Movimentação para: {item_selecionado_gerenciar}")
@@ -289,7 +296,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                     
                         idx_to_update = existing_data[(existing_data[OBRA_COL] == obra_do_item) & (existing_data[TOMBAMENTO_COL].astype(str) == tombamento_selecionado)].index
                         if not idx_to_update.empty:
-                            novo_status = "DISPONÍVEL" if tipo_mov == "Entrada" else "Em Uso Externo" 
+                            novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo" 
                             existing_data.loc[idx_to_update, STATUS_COL] = novo_status
                             conn.update(worksheet="Página1", data=existing_data)
                     
