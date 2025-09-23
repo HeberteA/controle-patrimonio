@@ -199,19 +199,19 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     
 def pagina_itens_cadastrados(is_admin, dados_da_obra):
     st.header("Itens Cadastrados", divider='rainbow')
-    elif selected_page == "Itens Cadastrados":
-        pagina_itens_cadastrados(is_admin, dados_da_obra)
-        if not dados_da_obra.empty:
-            filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
-            dados_filtrados = dados_da_obra
-            if filtro_status != "Todos":
+        elif selected_page == "Itens Cadastrados":
+            pagina_itens_cadastrados(is_admin, dados_da_obra)
+            if not dados_da_obra.empty:
+                filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
+                dados_filtrados = dados_da_obra
+                if filtro_status != "Todos":
                 dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
         
-            st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
-                NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
-            })
-        else:
-            st.info("Nenhum item cadastrado para a obra selecionada ainda.")
+                st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
+                    NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir")
+                })
+            else:
+                st.info("Nenhum item cadastrado para a obra selecionada ainda.")
             
 def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
