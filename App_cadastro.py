@@ -7,16 +7,14 @@ from googleapiclient.http import MediaIoBaseUpload
 import io
 import base64
 from datetime import datetime
-from streamlit_option_menu import option_menu # NOVO: Importa a biblioteca do menu
+from streamlit_option_menu import option_menu 
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
     page_icon="Lavie.png",
     layout="wide"
 )
 
-# --- INICIALIZAÇÃO DO ESTADO DA SESSÃO ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'is_admin' not in st.session_state:
@@ -131,22 +129,35 @@ def tela_de_login():
 def app_principal():
     is_admin = st.session_state.is_admin
     
-    logo_path = "Lavie.png"
-    try:
-        st.sidebar.image(logo_path, width=400)
-    except Exception:
-        pass
-    st.sidebar.header("Navegação")
-    if is_admin:
-        st.sidebar.info("Logado como **Administrador**.")
-    else:
-        st.sidebar.info(f"Logado na obra: **{st.session_state.selected_obra}**")
-    st.sidebar.write("---")
-    if st.sidebar.button("Sair / Trocar Obra"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
-        st.cache_data.clear()
-        st.rerun()
+    with st.sidebar:
+        logo_path = "Lavie.png"
+        try:
+            st.image(logo_path, width=150)
+        except Exception:
+            pass
+
+        st.header("Navegação")
+        if is_admin:
+            st.info("Logado como **Administrador**.")
+        else:
+            st.info(f"Logado na obra: **{st.session_state.selected_obra}**")
+
+        menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens"]
+        
+        selected_page = option_menu(
+            menu_title=None,
+            options=menu_options,
+            icons=["plus-circle-fill", "card-list", "pencil-square"],
+            menu_icon="cast",
+            default_index=0,
+        )
+
+        st.write("---")
+        if st.button("Sair / Trocar Obra"):
+            for key in st.session_state.keys():
+                del st.session_state[key]
+            st.cache_data.clear()
+            st.rerun()
 
     try:
         caminho_imagem = "Lavie.png"
@@ -187,19 +198,17 @@ def app_principal():
     lista_status, lista_obras_app, existing_data, df_movimentacoes = carregar_dados_app()
 
     if is_admin:
-        st.sidebar.subheader("Visão do Administrador")
-        obra_selecionada_admin = st.sidebar.selectbox("Selecione uma Obra para Visualizar", ["Todas"] + lista_obras_app)
+        obra_selecionada_admin = st.sidebar.selectbox("Filtrar por Obra", ["Todas"] + lista_obras_app)
         st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
         if obra_selecionada_admin == "Todas":
             dados_da_obra = existing_data
         else:
             dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_selecionada_admin].copy()
-        obra_para_cadastro = obra_selecionada_admin if obra_selecionada_admin != "Todas" else None
     else:
         obra_logada = st.session_state.selected_obra
         st.subheader(f"Obra: **{obra_logada}**")
         dados_da_obra = existing_data[existing_data[OBRA_COL] == obra_logada].copy()
-        obra_para_cadastro = obra_logada
+    
 
     def gerar_numero_tombamento_sequencial(obra_para_gerar):
         if not obra_para_gerar: return None
@@ -319,10 +328,20 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                 st.rerun()
 
             if col_delete.button("🗑️ Remover Item", use_container_width=True):
-                st.session_state.confirm_delete = True
-                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
-                st.session_state.movement_item_id = None
-                st.rerun()
+                if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item):
+                    tomb, obra = st.session_state.edit_item_id
+                    st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
+                    c1, c2 = st.columns(2)
+                    if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
+                        condicao = ~((existing_data[OBRA_COL].astype(str).str.strip() == str(obra).strip()) & 
+                                     (existing_data[TOMBAMENTO_COL].astype(str).str.strip() == str(tomb).strip()))
+                        df_sem_item = existing_data[condicao]
+                        conn.update(worksheet="Página1", data=df_sem_item)
+                        st.success(f"Item {tomb} da obra {obra} removido!")
+                        st.session_state.confirm_delete = False
+                        st.session_state.edit_item_id = None
+                        st.cache_data.clear()
+                        st.rerun()
 
             if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
                 with st.form("movement_form"):
