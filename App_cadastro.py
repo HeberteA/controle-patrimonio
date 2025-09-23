@@ -366,7 +366,7 @@ def app_principal():
         if is_admin:
             st.info("Logado como **Administrador**.")
         else:
-            st.info(f"Logado na obra: **{st.session_state.selected_obra}**")
+            st.subheader(f"OBRA: **{st.session_state.selected_obra}**")
 
         menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens"]
         
