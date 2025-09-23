@@ -221,8 +221,12 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
         if item_selecionado_gerenciar:
             tombamento_selecionado = item_selecionado_gerenciar.split(" - ")[0].strip()
             obra_do_item = dados_da_obra[dados_da_obra[TOMBAMENTO_COL].astype(str) == tombamento_selecionado][OBRA_COL].iloc[0]
-            col_mov, col_edit, col_delete = st.columns(3)
-        
+            
+            if not st.session_state.get('confirm_delete'):
+                col_mov, col_edit, col_delete = st.columns(3)
+            else:
+                col_delete = st.container()
+
             if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
                 st.session_state.movement_item_id = (tombamento_selecionado, obra_do_item)
                 st.session_state.edit_item_id = None
@@ -236,20 +240,32 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                 st.rerun()
 
             if col_delete.button("🗑️ Remover Item", use_container_width=True):
-                if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item):
-                    tomb, obra = st.session_state.edit_item_id
-                    st.warning(f"**Atenção!** Deseja remover o item **{tomb}** da obra **{obra}**?")
-                    c1, c2 = st.columns(2)
-                    if c1.button("Sim, tenho certeza e quero remover", use_container_width=True):
-                        condicao = ~((existing_data[OBRA_COL].astype(str).str.strip() == str(obra).strip()) & 
-                                     (existing_data[TOMBAMENTO_COL].astype(str).str.strip() == str(tomb).strip()))
-                        df_sem_item = existing_data[condicao]
-                        conn.update(worksheet="Página1", data=df_sem_item)
-                        st.success(f"Item {tomb} da obra {obra} removido!")
-                        st.session_state.confirm_delete = False
-                        st.session_state.edit_item_id = None
-                        st.cache_data.clear()
-                        st.rerun()
+                st.session_state.edit_item_id = (tombamento_selecionado, obra_do_item)
+                st.session_state.confirm_delete = True
+                st.session_state.movement_item_id = None
+                st.rerun()
+            if st.session_state.confirm_delete and st.session_state.edit_item_id == (tombamento_selecionado, obra_do_item):
+                tomb, obra = st.session_state.edit_item_id
+                st.warning(f"**Atenção!** Tem certeza que deseja remover permanentemente o item **{tomb}** da obra **{obra}**?")
+                
+                c1_del, c2_del = st.columns(2)
+                
+                if c1_del.button("Sim, tenho certeza e quero remover", use_container_width=True, type="primary"):
+                    condicao = ~((existing_data[OBRA_COL].astype(str).str.strip() == str(obra).strip()) & 
+                                 (existing_data[TOMBAMENTO_COL].astype(str).str.strip() == str(tomb).strip()))
+                    df_sem_item = existing_data[condicao]
+                    conn.update(worksheet="Página1", data=df_sem_item)
+                    st.success(f"Item {tomb} da obra {obra} removido!")
+                
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.cache_data.clear()
+                    st.rerun()
+
+                if c2_del.button("Cancelar", use_container_width=True):
+                    st.session_state.confirm_delete = False
+                    st.session_state.edit_item_id = None
+                    st.rerun()
 
             if st.session_state.movement_item_id == (tombamento_selecionado, obra_do_item):
                 with st.form("movement_form"):
@@ -273,7 +289,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                     
                         idx_to_update = existing_data[(existing_data[OBRA_COL] == obra_do_item) & (existing_data[TOMBAMENTO_COL].astype(str) == tombamento_selecionado)].index
                         if not idx_to_update.empty:
-                            novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo" 
+                            novo_status = "DISPONÍVEL" if tipo_mov == "Entrada" else "Em Uso Externo" 
                             existing_data.loc[idx_to_update, STATUS_COL] = novo_status
                             conn.update(worksheet="Página1", data=existing_data)
                     
