@@ -376,7 +376,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista
                     elif submitted_mov:
                         st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
                                 
-             st.write("---")
+            st.write("---")
             st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
             historico_item = df_movimentacoes[
                 (df_movimentacoes["Obra"] == obra_do_item) &
