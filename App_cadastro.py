@@ -368,12 +368,12 @@ def app_principal():
                                 existing_data.loc[idx_to_update, STATUS_COL] = novo_status
                                 conn.update(worksheet="Página1", data=existing_data)
                         
-                             st.success("Movimentação registrada com sucesso!")
-                             st.session_state.movement_item_id = None
-                             st.cache_data.clear()
-                             st.rerun()
-                         elif submitted_mov:
-                             st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
+                            st.success("Movimentação registrada com sucesso!")
+                            st.session_state.movement_item_id = None
+                            st.cache_data.clear()
+                            st.rerun()
+                        elif submitted_mov:
+                            st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
                                 
                 st.write("---")
                 st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
