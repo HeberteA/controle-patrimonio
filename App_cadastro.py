@@ -218,7 +218,7 @@ def app_principal():
         if numeros_numericos.empty: return "1"
         return str(int(numeros_numericos.max()) + 1)
 
- def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
+def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
     st.header("Cadastrar Novo Item", divider='rainbow')
     
     obra_para_cadastro = None
