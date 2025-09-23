@@ -218,9 +218,9 @@ def app_principal():
         if numeros_numericos.empty: return "1"
         return str(int(numeros_numericos.max()) + 1)
 
-def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
-    st.header("Cadastrar Novo Item", divider='rainbow')
-    
+if selected_page == "Cadastrar Item":
+
+    pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data)
     obra_para_cadastro = None
     if is_admin:
         obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...")
@@ -286,8 +286,8 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
 
-def pagina_itens_cadastrados(is_admin, dados_da_obra):
-    st.header("Itens Cadastrados", divider='rainbow')
+elif selected_page == "Itens Cadastrados":
+    pagina_itens_cadastrados(is_admin, dados_da_obra)
     if not dados_da_obra.empty:
         filtro_status = st.selectbox("Filtrar por Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
         dados_filtrados = dados_da_obra
@@ -300,8 +300,8 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra):
     else:
         st.info("Nenhum item cadastrado para a obra selecionada ainda.")
 
-def pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista_status):
-    st.header("Gerenciar Itens Cadastrados", divider='rainbow')
+elif selected_page == "Gerenciar Itens":
+    pagina_gerenciar_itens(dados_da_obra, existing_data, df_movimentacoes, lista_status)
     st.write("Abaixo estão os itens disponíveis para gerenciamento.")
     if not dados_da_obra.empty:
         st.dataframe(dados_da_obra, use_container_width=True, hide_index=True)
