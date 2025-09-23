@@ -266,7 +266,7 @@ def app_principal():
 
                     if is_valid:
                         link_nota_fiscal = ""
-                         if uploaded_pdf:
+                        if uploaded_pdf:
                             link_nota_fiscal = upload_to_gdrive(uploaded_pdf.getvalue(), f"NF_{num_tombamento_final}_{obra_para_cadastro.replace(' ', '_')}.pdf")
                     
                         novo_item_df = pd.DataFrame([{
