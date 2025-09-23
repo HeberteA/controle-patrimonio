@@ -11,7 +11,7 @@ from streamlit_option_menu import option_menu
 
 st.set_page_config(
     page_title="Cadastro de Patrimônio",
-    page_icon="Lavie.png",
+    page_icon="Lavie1.png",
     layout="wide"
 )
 
