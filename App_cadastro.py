@@ -208,8 +208,8 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     st.success(f"Item '{nome_produto}' cadastrado para a obra {obra_para_cadastro}! Tombamento: {num_tombamento_final}")
                     st.cache_data.clear()
                     st.rerun()
-            else:
-                st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
+        else:
+            st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
                     
 def pagina_itens_cadastrados(is_admin, dados_da_obra):
     st.header("Itens Cadastrados", divider='rainbow')
