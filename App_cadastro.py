@@ -154,29 +154,12 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
         submitted = st.form_submit_button("✔️ Cadastrar Item")
 
         if submitted:
-            campos_faltando = []
-    
-            if is_admin and not obra_para_cadastro:
-                campos_faltando.append("a Obra")
-        
-            if not nome_produto:
-                campos_faltando.append("Nome do Produto")
-        
-            if not num_nota_fiscal:
-                campos_faltando.append("N° da Nota Fiscal")
-        
-            if not local_uso:
-                campos_faltando.append("Local de Uso")
-        
-            if not responsavel:
-                campos_faltando.append("Responsável")
-    
-            if campos_faltando:
-                st.warning(f"⚠️ Por favor, preencha o(s) seguinte(s) campo(s) obrigatório(s): {', '.join(campos_faltando)}.")
-            else:
-                link_nota_fiscal = ""
+            if nome_produto and num_nota_fiscal and local_uso and responsavel:
+                input_limpo = num_tombamento_manual.strip() if num_tombamento_manual else ""
+                num_tombamento_final = ""
+                is_valid = False
 
-                if input_limpo:
+                if input_limpo: # <--- This line must be correctly indented
                     coluna_limpa = existing_data[
                         (existing_data[OBRA_COL] == obra_para_cadastro)
                     ][TOMBAMENTO_COL].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
