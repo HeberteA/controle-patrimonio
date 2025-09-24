@@ -194,7 +194,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     st.cache_data.clear()
                     st.rerun()
         else:
-            st.warning("⚠️ Preencha os campos obrigatórios (*) e selecione uma obra.")
+            st.warning("⚠️ Preencha os campos obrigatórios")
                     
 def pagina_itens_cadastrados(is_admin, dados_da_obra):
     st.header("Itens Cadastrados", divider='rainbow')
