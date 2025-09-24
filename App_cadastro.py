@@ -154,7 +154,9 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
         submitted = st.form_submit_button("✔️ Cadastrar Item")
 
         if submitted:
+            print("Formulário submetido!")
             if nome_produto and num_nota_fiscal and local_uso and responsavel:
+                print("Todos os campos obrigatórios preenchidos. Tentando cadastrar...")
                 input_limpo = num_tombamento_manual.strip() if num_tombamento_manual else ""
                 num_tombamento_final = ""
                 is_valid = False
