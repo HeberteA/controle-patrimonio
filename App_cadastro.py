@@ -58,7 +58,7 @@ COLUNAS_MOVIMENTACOES = [
     "Responsável pela Movimentação", "Observações"
 ]
 
-def gerar_numero_tombamento_sequencial(obra_para_gerar):
+def gerar_numero_tombamento_sequencial(existing_data, obra_para_gerar):
     if not obra_para_gerar: return None
     itens = existing_data[existing_data[OBRA_COL] == obra_para_gerar]
     if itens.empty: return "1"
@@ -180,7 +180,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         num_tombamento_final = input_limpo
                         is_valid = True
                 else:
-                    num_tombamento_final = gerar_numero_tombamento_sequencial(obra_para_cadastro)
+                    num_tombamento_final = gerar_numero_tombamento_sequencial(existing_data, obra_para_cadastro)
                     is_valid = True
 
                 if is_valid:
