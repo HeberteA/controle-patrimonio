@@ -384,7 +384,7 @@ def app_principal():
     with st.sidebar:
         logo_path = "Lavie.png"
         try:
-            st.image(logo_path, width=150)
+            st.image(logo_path, width=200)
         except Exception:
             pass
 
