@@ -566,22 +566,9 @@ def app_principal():
             st.info("Logado como **Administrador**.")
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
-            
-        lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
-
-        if is_admin:
-            obras_disponiveis = ["Todas"] + lista_obras_app
-            obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
-        
-            st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
-        
-            if obra_selecionada_admin == "Todas":
-                dados_da_obra = existing_data_full
-            else:
-                dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_admin].copy()
 
         menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens", "Dashboard"]
-        icons = ["bar-chart-fill", "plus-circle-fill", "card-list", "pencil-square"]
+        icons = ["plus-circle-fill", "card-list", "pencil-square", "bar-chart-fill"]
         
         selected_page = option_menu(
             menu_title=None,
@@ -593,6 +580,36 @@ def app_principal():
 
         st.write("---")
         
+        obra_selecionada_sidebar = None
+        if is_admin:
+            obras_disponiveis = ["Todas"] + lista_obras_app
+            obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
+            
+            st.write("---")
+            st.header("Relatórios da Visão")
+            st.info(f"Gerando para: **{obra_selecionada_sidebar}**")
+            
+            dados_relatorio = existing_data_full
+            if obra_selecionada_sidebar != "Todas":
+                dados_relatorio = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+
+            excel_data = to_excel(dados_relatorio)
+            st.download_button(
+                label="📥 Baixar Relatório (Excel)",
+                data=excel_data,
+                file_name=f"relatorio_patrimonio_{obra_selecionada_sidebar.replace(' ', '_')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+            pdf_data = to_pdf(dados_relatorio, obra_selecionada_sidebar)
+            st.download_button(
+                label="📄 Baixar Relatório (PDF)",
+                data=pdf_data,
+                file_name=f"relatorio_patrimonio_{obra_selecionada_sidebar.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
 
         if st.button("Sair / Trocar Obra"):
             for key in st.session_state.keys():
@@ -600,34 +617,19 @@ def app_principal():
             st.cache_data.clear()
             st.rerun()
     
-            
-        with st.sidebar:
-            st.write("---")
-            st.header("Relatórios da Visão")
-            st.info(f"Gerando para: **{obra_selecionada_admin}**")
-
-            excel_data = to_excel(dados_da_obra)
-            st.download_button(
-                label="📥 Baixar Relatório (Excel)",
-                data=excel_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-            pdf_data = to_pdf(dados_da_obra, obra_selecionada_admin)
-            st.download_button(
-                label="📄 Baixar Relatório (PDF)",
-                data=pdf_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+    
+    if is_admin:
+        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
+        if obra_selecionada_sidebar == "Todas":
+            dados_da_obra = existing_data_full
+        else:
+            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
             
     else:
         obra_logada = st.session_state.selected_obra
         st.subheader(f"Obra: **{obra_logada}**")
         dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
+
 
     if selected_page == "Dashboard":
         pagina_dashboard(dados_da_obra, df_movimentacoes)
