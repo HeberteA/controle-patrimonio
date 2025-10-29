@@ -567,12 +567,6 @@ def app_principal():
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-    if is_admin:
-        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
-        if obra_selecionada_sidebar == "Todas":
-            dados_da_obra = existing_data_full
-        else:
-            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
             
     else:
         obra_logada = st.session_state.selected_obra
@@ -592,10 +586,17 @@ def app_principal():
 
         st.write("---")
         
-        obra_selecionada_sidebar = None
         if is_admin:
-            obras_disponiveis = ["Todas"] + lista_obras_app 
+            obras_disponiveis = ["Todas"] + lista_obras_app
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
+            
+            st.write("---")
+            st.header("Relatórios da Visão")
+            st.info(f"Gerando para: **{obra_selecionada_sidebar}**")
+            
+            dados_relatorio = existing_data_full
+            if obra_selecionada_sidebar != "Todas":
+                dados_relatorio = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
             
             st.write("---")
             st.header("Relatórios da Visão")
