@@ -553,7 +553,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
 
 def app_principal():
     is_admin = st.session_state.is_admin
-    
+    lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
     with st.sidebar:
         logo_path = "Lavie.png"
         try:
@@ -566,6 +566,18 @@ def app_principal():
             st.info("Logado como **Administrador**.")
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
+
+    if is_admin:
+        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
+        if obra_selecionada_sidebar == "Todas":
+            dados_da_obra = existing_data_full
+        else:
+            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+            
+    else:
+        obra_logada = st.session_state.selected_obra
+        st.subheader(f"Obra: **{obra_logada}**")
+        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
         menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens", "Dashboard"]
         icons = ["plus-circle-fill", "card-list", "pencil-square", "bar-chart-fill"]
@@ -619,17 +631,7 @@ def app_principal():
             st.rerun()
     
     
-    if is_admin:
-        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
-        if obra_selecionada_sidebar == "Todas":
-            dados_da_obra = existing_data_full
-        else:
-            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
-            
-    else:
-        obra_logada = st.session_state.selected_obra
-        st.subheader(f"Obra: **{obra_logada}**")
-        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
+    
 
     if selected_page == "Cadastrar Item":
         pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data_full)
