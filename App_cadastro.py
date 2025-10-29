@@ -296,17 +296,17 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         return
 
                 novo_item_dict = {
-                    OBRA_COL: Obra,
-                    TOMBAMENTO_COL: N_de_Tombamento,
-                    NOME_COL: Nome,
-                    ESPEC_COL: Especificações,
-                    OBS_COL: Observações,
-                    LOCAL_COL: Local_de_Uso,
-                    RESPONSAVEL_COL: Responsável,
-                    NF_NUM_COL: N_da_Nota_Fiscal,
-                    NF_LINK_COL: Nota_Fiscal _Link,
-                    VALOR_COL: Valor,
-                    STATUS_COL: Status
+                    OBRA_COL: obra_para_cadastro,
+                    TOMBAMENTO_COL: num_tombamento_final,
+                    NOME_COL: nome_produto,
+                    ESPEC_COL: especificacoes,
+                    OBS_COL: observacoes,
+                    LOCAL_COL: local_uso,
+                    RESPONSAVEL_COL: responsavel,
+                    NF_NUM_COL: num_nota_fiscal,
+                    NF_LINK_COL: link_nota_fiscal,
+                    VALOR_COL: valor_produto,
+                    STATUS_COL: status_selecionado
                 }
                 
                 try:
