@@ -105,7 +105,7 @@ def carregar_dados_app():
         patrimonio_resp = conn.table("patrimonio").select("*").execute()
         patrimonio_df = pd.DataFrame(patrimonio_resp.data)
         if patrimonio_df.empty: 
-             patrimonio_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL])
+             patrimonio_df = pd.DataFrame(columns=[OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL])
         if VALOR_COL in patrimonio_df.columns:
             patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
 
@@ -131,10 +131,10 @@ def to_excel(df):
     
 def to_pdf(df, obra_nome):
     """Converte DataFrame para um arquivo PDF simples em memória."""
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf = FPDF(orientation='L', unit='mm', format='A4') 
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
-    
+
     titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
     pdf.cell(0, 10, titulo, 0, 1, 'C')
     pdf.ln(10)
@@ -146,6 +146,7 @@ def to_pdf(df, obra_nome):
     for col_name in cols_to_export:
         pdf.cell(col_widths[col_name], 7, col_name.replace("_", " ").title(), 1, 0, 'C')
     pdf.ln()
+
     pdf.set_font('Arial', '', 8)
     df_pdf = df[cols_to_export].fillna('') 
     
