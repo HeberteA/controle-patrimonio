@@ -8,10 +8,24 @@ from datetime import datetime
 import plotly.express as px 
 from fpdf import FPDF         
 import openpyxl      
-st.set_page_config(page_title="Test", page_icon="🧊")
-st.title("Minimal App Test - Parte 1")
-st.success("Se você vê isso, todos os seus imports funcionaram e o Streamlit está rodando.")
-st.write(f"Python version: {st.runtime.get_instance().get_python_version()}")
+
+st.title("Minimal App Test - Parte 2 (Conexão)")
+
+try:
+    st.write("Tentando criar a conexão com o Supabase...")
+    conn = st.connection("supabase", type=SupabaseConnection)
+    st.write(conn) # Isso vai imprimir o objeto da conexão
+    st.success("✅ TESTE 2 SUCESSO: A conexão com o Supabase foi criada.")
+    
+    # Teste de leitura
+    st.write("Tentando ler a tabela 'obras'...")
+    obras_resp = conn.query("*", table="obras", ttl=300).execute()
+    st.write(pd.DataFrame(obras_resp.data))
+    st.success("✅ TESTE 3 SUCESSO: A leitura da tabela 'obras' funcionou.")
+    
+except Exception as e:
+    st.error("❌ TESTE FALHOU: Uma das etapas da conexão ou leitura quebrou.")
+    st.exception(e)
 
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
