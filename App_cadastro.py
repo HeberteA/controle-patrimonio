@@ -93,7 +93,7 @@ except Exception as e:
     st.stop()
 
 
-@st.cache_data(ttl=300) 
+@st.cache_data(ttl=30) 
 def carregar_dados_app():
     try:
         status_resp = conn.table("status").select("*").execute()
@@ -201,7 +201,7 @@ def to_pdf(df, obra_nome):
         return None
         
 def tela_de_login():
-    st.image("Lavie.png", width=900, use_container_width=True)
+    st.image("Lavie.png", width=1500)
     st.title("Controle de Patrimônio")
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
