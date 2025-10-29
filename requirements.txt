@@ -1,4 +1,5 @@
 streamlit
+streamlit_option_menu
 st-supabase-connection
 fpdf2
 openpyxl
