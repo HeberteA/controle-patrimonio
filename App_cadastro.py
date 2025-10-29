@@ -465,13 +465,13 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
         if not st.session_state.get('confirm_delete'):
             col_mov, col_edit, col_delete = st.columns(3)
             
-            if col_mov.button("Registrar Entrada/Saída", use_container_width=True):
+            if col_mov.button("Registrar Entrada/Saída",type="primary", use_container_width=True):
                 st.session_state.movement_item_id = item_id_selecionado
                 st.session_state.edit_item_id = None
                 st.session_state.confirm_delete = False
                 st.rerun()
 
-            if col_edit.button("Editar Item", use_container_width=True):
+            if col_edit.button("Editar Item", type="primary", use_container_width=True):
                 st.session_state.edit_item_id = item_id_selecionado
                 st.session_state.movement_item_id = None
                 st.session_state.confirm_delete = False
@@ -479,7 +479,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
         else:
             col_delete = st.container() 
 
-        if col_delete.button("Remover Item", use_container_width=True):
+        if col_delete.button("Remover Item", type="primary", use_container_width=True):
             st.session_state.edit_item_id = item_id_selecionado
             st.session_state.confirm_delete = True
             st.session_state.movement_item_id = None
@@ -633,7 +633,7 @@ def app_principal():
     
     if is_admin:
         nome_da_obra_para_relatorio = obra_selecionada_sidebar
-        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
+        
         if obra_selecionada_sidebar == "Todas":
             dados_da_obra = existing_data_full
         else:
@@ -642,7 +642,6 @@ def app_principal():
     else: 
         obra_logada = st.session_state.selected_obra
         nome_da_obra_para_relatorio = obra_logada
-        
         dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
     with st.sidebar:
