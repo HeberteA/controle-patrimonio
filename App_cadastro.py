@@ -293,16 +293,16 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
     with st.form("cadastro_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            nome_produto = st.text_input("Nome do Produto*")
+            nome_produto = st.text_input("Nome do Produto")
             num_tombamento_manual = st.text_input("N° de Tombamento (deixe em branco para gerar)")
-            num_nota_fiscal = st.text_input("N° da Nota Fiscal*")
-            valor_produto = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+            num_nota_fiscal = st.text_input("N° da Nota Fiscal")
+            valor_produto = st.number_input("Valor (R$)", min_value=0.0, step=100.00, format="%.2f")
             status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
         with col2:
             especificacoes = st.text_area("Especificações")
             observacoes = st.text_area("Observações")
-            local_uso = st.text_input("Local de Uso*")
-            responsavel = st.text_input("Responsável*")
+            local_uso = st.text_input("Local de Uso")
+            responsavel = st.text_input("Responsável")
     
         uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
         submitted = st.form_submit_button("Cadastrar Item", type="primary")
