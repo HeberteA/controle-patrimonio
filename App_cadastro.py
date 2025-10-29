@@ -630,31 +630,27 @@ def app_principal():
             obras_disponiveis = ["Todas"] + lista_obras_app 
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
             
-            st.write("---")
-            st.header("Relatórios da Visão")
-            st.info(f"Gerando para: **{obra_selecionada_sidebar}**")
-            
-            dados_relatorio = existing_data_full
-            if obra_selecionada_sidebar != "Todas":
-                dados_relatorio = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+        st.write("---")
+        st.header("Relatórios da Visão")
+        st.info(f"Gerando para: **{nome_da_obra_para_relatorio}**")
+        
+        excel_data = to_excel(dados_da_obra)
+        st.download_button(
+            label="📥 Baixar Relatório (Excel)",
+            data=excel_data,
+            file_name=f"relatorio_patrimonio_{nome_da_obra_para_relatorio.replace(' ', '_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
-            excel_data = to_excel(dados_relatorio)
-            st.download_button(
-                label="📥 Baixar Relatório (Excel)",
-                data=excel_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_sidebar.replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-            pdf_data = to_pdf(dados_relatorio, obra_selecionada_sidebar)
-            st.download_button(
-                label="📄 Baixar Relatório (PDF)",
-                data=pdf_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_sidebar.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        pdf_data = to_pdf(dados_da_obra, nome_da_obra_para_relatorio)
+        st.download_button(
+            label="📄 Baixar Relatório (PDF)",
+            data=pdf_data,
+            file_name=f"relatorio_patrimonio_{nome_da_obra_para_relatorio.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
         st.write("---")
 
