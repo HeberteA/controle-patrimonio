@@ -30,7 +30,7 @@ if 'movement_item_id' not in st.session_state:
 
 ID_COL = "id"
 OBRA_COL = "Obra"
-TOMBAMENTO_COL = "N° de Tombamento"
+TOMBAMENTO_COL = "N de Tombamento"
 NOME_COL = "Nome"
 STATUS_COL = "Status"
 NF_NUM_COL = "N° da Nota Fiscal"
@@ -51,7 +51,6 @@ def get_img_as_base64(file):
 
 def upload_to_supabase_storage(file_data, file_name, file_type='application/pdf'):
     try:
-        # CORREÇÃO 1: Conexão manual
         conn_storage = st.connection(
             "supabase",
             type=SupabaseConnection,
@@ -298,13 +297,13 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
 
                 novo_item_dict = {
                     OBRA_COL: Obra,
-                    TOMBAMENTO_COL: N° de Tombamento,
+                    TOMBAMENTO_COL: N de Tombamento,
                     NOME_COL: Nome,
                     ESPEC_COL: Especificações,
                     OBS_COL: Observações,
                     LOCAL_COL: Local de Uso,
                     RESPONSAVEL_COL: Responsável,
-                    NF_NUM_COL: N° da Nota Fiscal,
+                    NF_NUM_COL: N da Nota Fiscal,
                     NF_LINK_COL: Nota Fiscal (Link),
                     VALOR_COL: Valor,
                     STATUS_COL: Status
