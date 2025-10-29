@@ -267,7 +267,6 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         
         fig_status = px.pie(status_counts, names=STATUS_COL, values='count', 
                             title="Distribuição de Itens por Status")
-        fig_status.update_traces(marker_color='#E37026')
         st.plotly_chart(fig_status, use_container_width=True)
 
     with col_graf2:
