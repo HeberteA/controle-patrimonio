@@ -558,15 +558,17 @@ def app_principal():
         except Exception:
             pass
 
-        st.header("Navegação")
+       st.header("Navegação")
         if is_admin:
             st.info("Logado como **Administrador**.")
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
+            
+    lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
 
-        if is_admin:
-            obras_disponiveis = ["Todas"] + lista_obras_app
-            obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
+    if is_admin:
+        obras_disponiveis = ["Todas"] + lista_obras_app
+        obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
         
         st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
         
@@ -587,6 +589,7 @@ def app_principal():
         )
 
         st.write("---")
+        
 
         if st.button("Sair / Trocar Obra"):
             for key in st.session_state.keys():
@@ -594,32 +597,29 @@ def app_principal():
             st.cache_data.clear()
             st.rerun()
     
-    lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
-
-
             
-    with st.sidebar:
-        st.write("---")
-        st.header("Relatórios da Visão")
-        st.info(f"Gerando para: **{obra_selecionada_admin}**")
+        with st.sidebar:
+            st.write("---")
+            st.header("Relatórios da Visão")
+            st.info(f"Gerando para: **{obra_selecionada_admin}**")
 
-        excel_data = to_excel(dados_da_obra)
-        st.download_button(
-            label="📥 Baixar Relatório (Excel)",
-            data=excel_data,
-            file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+            excel_data = to_excel(dados_da_obra)
+            st.download_button(
+                label="📥 Baixar Relatório (Excel)",
+                data=excel_data,
+                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
-        pdf_data = to_pdf(dados_da_obra, obra_selecionada_admin)
-        st.download_button(
-            label="📄 Baixar Relatório (PDF)",
-            data=pdf_data,
-            file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+            pdf_data = to_pdf(dados_da_obra, obra_selecionada_admin)
+            st.download_button(
+                label="📄 Baixar Relatório (PDF)",
+                data=pdf_data,
+                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
             
     else:
         obra_logada = st.session_state.selected_obra
