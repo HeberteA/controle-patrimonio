@@ -1,9 +1,6 @@
 streamlit
-pandas
 st-supabase-connection
 fpdf2
 openpyxl
 plotly
-streamlit-option-menu
-
-
+pandas
