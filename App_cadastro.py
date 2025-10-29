@@ -201,7 +201,7 @@ def to_pdf(df, obra_nome):
         return None
         
 def tela_de_login():
-    logo_path = "Lavie.png"
+    st.image("Lavie.png", use_container_width=True)
     st.title("Controle de Patrimônio")
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
@@ -600,7 +600,7 @@ def app_principal():
     lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
     
     with st.sidebar:
-        logo_path = "Lavie.png"
+        st.image("Lavie.png", use_container_width=True)
         st.header("Navegação")
         if is_admin:
             st.info("Logado como **Administrador**.")
