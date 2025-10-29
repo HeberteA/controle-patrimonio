@@ -624,9 +624,8 @@ def app_principal():
             default_index=0,
         )
 
-        st.write("---")
-        
         if is_admin:
+            st.write("---")
             obras_disponiveis = ["Todas"] + lista_obras_app 
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
             
@@ -642,8 +641,8 @@ def app_principal():
             
     else: 
         obra_logada = st.session_state.selected_obra
-        nome_da_obra_para_relatorio = obra_logada 
-        st.subheader(f"Obra: **{obra_logada}**")
+        nome_da_obra_para_relatorio = obra_logada
+        
         dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
     with st.sidebar:
