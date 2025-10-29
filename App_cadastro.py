@@ -51,6 +51,7 @@ def get_img_as_base64(file):
 
 def upload_to_supabase_storage(file_data, file_name, file_type='application/pdf'):
     try:
+        # CORREÇÃO 1: Conexão manual
         conn_storage = st.connection(
             "supabase",
             type=SupabaseConnection,
@@ -93,48 +94,46 @@ except Exception as e:
     st.stop()
 
 
-@st.cache_data(ttl=60) 
+@st.cache_data(ttl=300) 
 def carregar_dados_app():
     try:
         status_resp = conn.table("status").select("*").execute()
         lista_status = [row['Nome do Status'] for row in status_resp.data]
-
+        
         obras_resp = conn.table("obras").select("*").execute()
         lista_obras = [row['Nome da Obra'] for row in obras_resp.data]
         
         patrimonio_resp = conn.table("patrimonio").select("*").execute()
         patrimonio_df = pd.DataFrame(patrimonio_resp.data)
         if patrimonio_df.empty: 
-             patrimonio_df = pd.DataFrame(columns=[OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL])
+             patrimonio_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL])
         if VALOR_COL in patrimonio_df.columns:
             patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
 
         movimentacoes_resp = conn.table("movimentacoes").select("*").execute()
         movimentacoes_df = pd.DataFrame(movimentacoes_resp.data)
         if movimentacoes_df.empty:
-            movimentacoes_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "tipo_movimentacao", "data_hora", "responsavel_movimentacao", "observacoes"])
+            movimentacoes_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "Tipo de Movimentação", "Data e Hora", "Responsável pela Movimentação", "Observações"])
 
         return lista_status, lista_obras, patrimonio_df, movimentacoes_df
     
     except Exception as e:
-        st.error(f"Erro ao carregar dados do Supabase: {e}")
+        st.error(f"Erro ao carregar dados do Supabase. Verifique os nomes das colunas (ex: 'nome_do_status'). Erro: {e}")
         return [], [], pd.DataFrame(), pd.DataFrame()
 
 @st.cache_data
 def to_excel(df):
-    """Converte DataFrame para um arquivo Excel em memória."""
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Patrimonio')
     processed_data = output.getvalue()
     return processed_data
-    
+
 def to_pdf(df, obra_nome):
-    """Converte DataFrame para um arquivo PDF simples em memória."""
-    pdf = FPDF(orientation='L', unit='mm', format='A4') 
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
-
+    
     titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
     pdf.cell(0, 10, titulo, 0, 1, 'C')
     pdf.ln(10)
@@ -298,17 +297,17 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         return
 
                 novo_item_dict = {
-                    OBRA_COL: obra_para_cadastro,
-                    TOMBAMENTO_COL: num_tombamento_final,
-                    NOME_COL: nome_produto,
-                    ESPEC_COL: especificacoes,
-                    OBS_COL: observacoes,
-                    LOCAL_COL: local_uso,
-                    RESPONSAVEL_COL: responsavel,
-                    NF_NUM_COL: num_nota_fiscal,
-                    NF_LINK_COL: link_nota_fiscal,
-                    VALOR_COL: valor_produto,
-                    STATUS_COL: status_selecionado
+                    OBRA_COL: Obra,
+                    TOMBAMENTO_COL: N° de Tombamento,
+                    NOME_COL: Nome,
+                    ESPEC_COL: Especificações,
+                    OBS_COL: Observações,
+                    LOCAL_COL: Local de Uso,
+                    RESPONSAVEL_COL: Responsável,
+                    NF_NUM_COL: N° da Nota Fiscal,
+                    NF_LINK_COL: Nota Fiscal (Link),
+                    VALOR_COL: Valor,
+                    STATUS_COL: Status
                 }
                 
                 try:
