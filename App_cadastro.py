@@ -531,12 +531,12 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                         try:
                             conn.table("patrimonio").update(update_dict).eq(ID_COL, item_id_selecionado).execute()
                                 
-                                st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
-                                st.session_state.edit_item_id = None
-                                st.cache_data.clear()
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao atualizar item: {e}")
+                            st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
+                            st.session_state.edit_item_id = None
+                            st.cache_data.clear()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao atualizar item: {e}")
             
         st.write("---")
         st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
