@@ -1,11 +1,9 @@
 streamlit
 pandas
-gspread
-gspread-dataframe
-google-auth-oauthlib
-st-gsheets-connection
-google-auth-httplib2
-google-api-python-client
+st-supabase-connection
+fpdf2
+openpyxl
+plotly
 streamlit-option-menu
 
 
