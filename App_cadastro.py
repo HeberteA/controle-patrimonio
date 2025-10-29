@@ -15,7 +15,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Inicialização do Session State ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'is_admin' not in st.session_state:
@@ -191,16 +190,15 @@ def to_pdf(df, obra_nome):
                 pdf.cell(col_widths[col_name], 6, text, 1)
             pdf.ln()
 
-        return pdf.output(dest='S')
+        return bytes(pdf.output(dest='S'))
     
     except KeyError as e:
         st.error(f"Erro ao gerar PDF (KeyError): {e}")
         st.error("Isso geralmente acontece porque os dados estão vazios (devido a um erro anterior) ou as 'Constantes das Colunas' no código não batem com o Supabase.")
-        return None 
+        return None
     except Exception as e:
         st.error(f"Erro inesperado ao gerar PDF: {e}")
         return None
-
 def tela_de_login():
     logo_path = "Lavie.png"
     st.title("Controle de Patrimônio")
