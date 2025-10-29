@@ -582,7 +582,7 @@ def app_principal():
         
         obra_selecionada_sidebar = None
         if is_admin:
-            obras_disponiveis = ["Todas"] + lista_obras_app
+            obras_disponiveis = ["Todas"] + lista_obras_app 
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
             
             st.write("---")
@@ -611,6 +611,7 @@ def app_principal():
                 use_container_width=True
             )
 
+        st.write("---")
         if st.button("Sair / Trocar Obra"):
             for key in st.session_state.keys():
                 del st.session_state[key]
@@ -630,15 +631,14 @@ def app_principal():
         st.subheader(f"Obra: **{obra_logada}**")
         dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
-
-    if selected_page == "Dashboard":
-        pagina_dashboard(dados_da_obra, df_movimentacoes)
-    elif selected_page == "Cadastrar Item":
+    if selected_page == "Cadastrar Item":
         pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data_full)
     elif selected_page == "Itens Cadastrados":
         pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status)
     elif selected_page == "Gerenciar Itens":
         pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status)
+    elif selected_page == "Dashboard":
+        pagina_dashboard(dados_da_obra, df_movimentacoes)
 
 if not st.session_state.logged_in:
     tela_de_login()
