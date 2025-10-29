@@ -121,6 +121,14 @@ def carregar_dados_app():
         return [], [], pd.DataFrame(), pd.DataFrame()
 
 @st.cache_data
+def to_excel(df):
+    """Converte DataFrame para um arquivo Excel em memória."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Patrimonio')
+    processed_data = output.getvalue()
+    return processed_data
+    
 def to_pdf(df, obra_nome):
     """Converte DataFrame para um arquivo PDF simples em memória."""
     pdf = FPDF(orientation='L', unit='mm', format='A4')
