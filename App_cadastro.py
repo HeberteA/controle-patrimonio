@@ -670,7 +670,7 @@ def app_principal():
 
         st.write("---")
 
-        if st.button("Sair / Trocar Obra", type="primary"):
+        if st.button("Sair / Trocar Obra", type="primary", use_container_width=True):
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.cache_data.clear()
