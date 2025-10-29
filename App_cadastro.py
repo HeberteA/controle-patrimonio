@@ -567,12 +567,6 @@ def app_principal():
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-            
-    else:
-        obra_logada = st.session_state.selected_obra
-        st.subheader(f"Obra: **{obra_logada}**")
-        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
-
         menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens", "Dashboard"]
         icons = ["plus-circle-fill", "card-list", "pencil-square", "bar-chart-fill"]
         
@@ -584,19 +578,11 @@ def app_principal():
             default_index=0,
         )
 
-        st.write("---")
+        sst.write("---")
         
         if is_admin:
             obras_disponiveis = ["Todas"] + lista_obras_app
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
-            
-            st.write("---")
-            st.header("Relatórios da Visão")
-            st.info(f"Gerando para: **{obra_selecionada_sidebar}**")
-            
-            dados_relatorio = existing_data_full
-            if obra_selecionada_sidebar != "Todas":
-                dados_relatorio = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
             
             st.write("---")
             st.header("Relatórios da Visão")
