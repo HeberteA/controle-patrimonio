@@ -146,7 +146,6 @@ def to_pdf(df, obra_nome):
     for col_name in cols_to_export:
         pdf.cell(col_widths[col_name], 7, col_name.replace("_", " ").title(), 1, 0, 'C')
     pdf.ln()
-
     pdf.set_font('Arial', '', 8)
     df_pdf = df[cols_to_export].fillna('') 
     
@@ -155,6 +154,7 @@ def to_pdf(df, obra_nome):
             text = str(row[col_name]).encode('latin-1', 'replace').decode('latin-1')
             pdf.cell(col_widths[col_name], 6, text, 1)
         pdf.ln()
+
     return pdf.output(dest='S')
 
     
