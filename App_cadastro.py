@@ -578,7 +578,7 @@ def app_principal():
             default_index=0,
         )
 
-        sst.write("---")
+        st.write("---")
         
         if is_admin:
             obras_disponiveis = ["Todas"] + lista_obras_app
