@@ -282,7 +282,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
     st.header("Cadastrar Novo Item", divider='rainbow')
     obra_para_cadastro = None
     if is_admin:
-        obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...", type="primary")
+        obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...")
     else:
         obra_para_cadastro = st.session_state.selected_obra
 
