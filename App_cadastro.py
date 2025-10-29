@@ -558,7 +558,7 @@ def app_principal():
         except Exception:
             pass
 
-       st.header("Navegação")
+        st.header("Navegação")
         if is_admin:
             st.info("Logado como **Administrador**.")
         else:
