@@ -193,7 +193,7 @@ def tela_de_login():
     
     st.title("Controle de Patrimônio")
 
-    tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
+    tab1, tab2 = st.tabs(["👤 Acesso por Obra", "🔑 Acesso de Administrador"])
 
     with tab1:
         st.subheader("Login da Obra")
@@ -230,6 +230,9 @@ def tela_de_login():
             else:
                 st.error("Senha de administrador incorreta.")
 
+# ==============================================================================
+# 1. PÁGINA DE DASHBOARD (NOVA)
+# ==============================================================================
 def pagina_dashboard(dados_da_obra, df_movimentacoes):
     st.header("Dashboard de Patrimônio", divider='rainbow')
 
@@ -267,6 +270,9 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         fig_local.update_traces(textposition='outside')
         st.plotly_chart(fig_local, use_container_width=True)
 
+# ==============================================================================
+# 2. PÁGINA DE CADASTRO (Refatorada para Supabase)
+# ==============================================================================
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
     st.header("Cadastrar Novo Item", divider='rainbow')
     obra_para_cadastro = None
@@ -294,7 +300,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             responsavel = st.text_input("Responsável*")
     
         uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
-        submitted = st.form_submit_button("Cadastrar Item")
+        submitted = st.form_submit_button("✔️ Cadastrar Item")
 
         if submitted:
             if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
@@ -350,6 +356,9 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                 except Exception as e:
                     st.error(f"Erro ao salvar no Supabase: {e}")
 
+# ==============================================================================
+# 3. PÁGINA DE ITENS CADASTRADOS (Refatorada com Filtros Avançados)
+# ==============================================================================
 def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
     st.header("Itens Cadastrados", divider='rainbow')
     
@@ -359,7 +368,7 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
 
     dados_filtrados = dados_da_obra.copy()
     
-    with st.expander("Filtros", expanded=True):
+    with st.expander("🔍 Filtros Avançados", expanded=True):
         col_f1, col_f2, col_f3 = st.columns(3)
         
         with col_f1:
@@ -401,6 +410,9 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
     else:
         st.info("Nenhum item encontrado com os filtros aplicados.")
 
+# ==============================================================================
+# 4. PÁGINA DE GERENCIAMENTO (Refatorada para Supabase e Filtros)
+# ==============================================================================
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
@@ -443,13 +455,13 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
         if not st.session_state.get('confirm_delete'):
             col_mov, col_edit, col_delete = st.columns(3)
             
-            if col_mov.button("Registrar Entrada/Saída", use_container_width=True):
+            if col_mov.button("📥 Registrar Entrada/Saída", use_container_width=True):
                 st.session_state.movement_item_id = item_id_selecionado
                 st.session_state.edit_item_id = None
                 st.session_state.confirm_delete = False
                 st.rerun()
 
-            if col_edit.button("Editar Item", use_container_width=True):
+            if col_edit.button("✏️ Editar Item", use_container_width=True):
                 st.session_state.edit_item_id = item_id_selecionado
                 st.session_state.movement_item_id = None
                 st.session_state.confirm_delete = False
@@ -457,7 +469,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
         else:
             col_delete = st.container() 
 
-        if col_delete.button("Remover Item", use_container_width=True):
+        if col_delete.button("🗑️ Remover Item", use_container_width=True):
             st.session_state.edit_item_id = item_id_selecionado
             st.session_state.confirm_delete = True
             st.session_state.movement_item_id = None
