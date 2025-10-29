@@ -14,7 +14,23 @@ st.set_page_config(
     page_icon="Lavie1.png",
     layout="wide"
 )
+st.error("--- INICIANDO MODO DE DEPURACÃO DE SECRETS ---")
+st.subheader("O Streamlit está lendo os seguintes secrets:")
 
+try:
+    # Tentamos ler os secrets
+    url = st.secrets["connections"]["supabase"]["url"]
+    key = st.secrets["connections"]["supabase"]["key"]
+    
+    st.write("✅ **[connections.supabase] encontrado!**")
+    st.write(f"**URL lida:** `{url}`")
+    st.write(f"**Key lida:** `{key[:4]}...{key[-4:]}`")
+
+except Exception as e:
+    st.error(f"❌ **FALHA AO LER OS SECRETS!**")
+    st.error(f"Erro: {e}")
+
+st.stop()
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'is_admin' not in st.session_state:
