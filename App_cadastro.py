@@ -598,28 +598,28 @@ def app_principal():
 
 
             
-        with st.sidebar:
-            st.write("---")
-            st.header("Relatórios da Visão")
-            st.info(f"Gerando para: **{obra_selecionada_admin}**")
+    with st.sidebar:
+        st.write("---")
+        st.header("Relatórios da Visão")
+        st.info(f"Gerando para: **{obra_selecionada_admin}**")
 
-            excel_data = to_excel(dados_da_obra)
-            st.download_button(
-                label="📥 Baixar Relatório (Excel)",
-                data=excel_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+        excel_data = to_excel(dados_da_obra)
+        st.download_button(
+            label="📥 Baixar Relatório (Excel)",
+            data=excel_data,
+            file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
-            pdf_data = to_pdf(dados_da_obra, obra_selecionada_admin)
-            st.download_button(
-                label="📄 Baixar Relatório (PDF)",
-                data=pdf_data,
-                file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        pdf_data = to_pdf(dados_da_obra, obra_selecionada_admin)
+        st.download_button(
+            label="📄 Baixar Relatório (PDF)",
+            data=pdf_data,
+            file_name=f"relatorio_patrimonio_{obra_selecionada_admin.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
             
     else:
         obra_logada = st.session_state.selected_obra
