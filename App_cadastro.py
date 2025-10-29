@@ -11,7 +11,7 @@ import openpyxl
 
 st.set_page_config(
     page_title="Controle de Patrimônio Lavie",
-    page_icon="Lavie1.png",
+    page_icon="🧊", # TESTE: Usando um emoji em vez de arquivo
     layout="wide"
 )
 
@@ -144,17 +144,18 @@ def to_pdf(df, obra_nome):
 
 
 def tela_de_login():
-    logo_path = "Lavie.png"
-    img_base64 = get_img_as_base64(logo_path)
-    if img_base64:
-        st.markdown(
-            f"""<div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <img src="data:image/png;base64,{img_base64}" alt="Logo" width="900">
-            </div>""",
-            unsafe_allow_html=True,
-        )
+    # logo_path = "Lavie.png"
+    # img_base64 = get_img_as_base64(logo_path)
+    # if img_base64:
+    #     st.markdown(
+    #         f"""<div style="display: flex; justify-content: center; margin-bottom: 20px;">
+    #             <img src="data:image/png;base64,{img_base64}" alt="Logo" width="900">
+    #         </div>""",
+    #     unsafe_allow_html=True,
+    #     )
     
     st.title("Controle de Patrimônio")
+    ...
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
 
@@ -546,14 +547,16 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
 def app_principal():
     is_admin = st.session_state.is_admin
     
+    # --- Sidebar (Refatorada com Relatórios) ---
     with st.sidebar:
-        logo_path = "Lavie.png"
-        try:
-            st.image(logo_path, width=150)
-        except Exception:
-            pass
+        # logo_path = "Lavie.png"
+        # try:
+        #     st.image(logo_path, width=150)
+        # except Exception:
+        #     pass
 
         st.header("Navegação")
+        ...
         if is_admin:
             st.info("Logado como **Administrador**.")
         else:
