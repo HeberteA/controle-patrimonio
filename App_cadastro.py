@@ -11,12 +11,10 @@ import openpyxl
 
 st.set_page_config(page_title="Test", page_icon="🧊")
 
-st.title("Minimal App Test - Parte 3 (Conexão Manual)")
+st.title("Minimal App Test - Parte 4 (Usando .table())")
 
 try:
-    # --- A CORREÇÃO ESTÁ AQUI ---
-    # Estamos lendo os secrets (que sabemos que existem) e passando
-    # manualmente para a função de conexão.
+    # 1. Conexão Manual (que funcionou)
     st.write("Tentando criar a conexão MANUAL com o Supabase...")
     conn = st.connection(
         "supabase",
@@ -24,19 +22,24 @@ try:
         url=st.secrets["connections"]["supabase"]["url"],
         key=st.secrets["connections"]["supabase"]["key"]
     )
+    st.success("✅ Conexão manual criada com sucesso.")
+    
+    # --- A CORREÇÃO ESTÁ AQUI ---
+    # Estamos trocando o .query() pelo .table().select()
+    # Esta é a sintaxe padrão do supabase-py
+    st.write("Tentando ler a tabela 'obras' usando .table().select()...")
+    
+    obras_resp = conn.table("obras").select("*").execute()
+    
     # --- FIM DA CORREÇÃO ---
-    
-    st.write(conn) # Isso vai imprimir o objeto da conexão
-    st.success("✅ TESTE 3 SUCESSO: A conexão manual com o Supabase foi criada.")
-    
-    # Teste de leitura
-    st.write("Tentando ler a tabela 'obras'...")
-    obras_resp = conn.query("*", table="obras", ttl=300).execute()
-    st.write(pd.DataFrame(obras_resp.data))
-    st.success("✅ TESTE 4 SUCESSO: A leitura da tabela 'obras' funcionou.")
+
+    st.success("✅ TESTE 4 SUCESSO: A leitura da tabela 'obras' funcionou!")
+    st.write("Dados encontrados:")
+    st.dataframe(pd.DataFrame(obras_resp.data))
     
 except Exception as e:
-    st.error("❌ TESTE FALHOU: Mesmo com a conexão manual, algo quebrou.")
+    st.error("❌ TESTE FALHOU: Mesmo com a correção, algo quebrou.")
+    st.exception(e) # Isso vai imprimir o erro completo na telaebrou.")
     st.exception(e) # Isso vai imprimir o erro completo na tela
 
 if 'logged_in' not in st.session_state:
