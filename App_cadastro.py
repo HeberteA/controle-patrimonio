@@ -121,20 +121,14 @@ def carregar_dados_app():
         return [], [], pd.DataFrame(), pd.DataFrame()
 
 @st.cache_data
-def to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Patrimonio')
-    processed_data = output.getvalue()
-    return processed_data
-
 def to_pdf(df, obra_nome):
     """Converte DataFrame para um arquivo PDF simples em memória."""
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
     
-    pdf.cell(0, 10, f'Relatorio de Patrimonio - Obra: {obra_nome}', 0, 1, 'C')
+    titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
+    pdf.cell(0, 10, titulo, 0, 1, 'C')
     pdf.ln(10)
 
     pdf.set_font('Arial', 'B', 8)
@@ -153,9 +147,9 @@ def to_pdf(df, obra_nome):
             text = str(row[col_name]).encode('latin-1', 'replace').decode('latin-1')
             pdf.cell(col_widths[col_name], 6, text, 1)
         pdf.ln()
+    return pdf.output(dest='S')
 
-    return pdf.output(dest='S').encode('latin-1') 
-
+    
 def tela_de_login():
     logo_path = "Lavie.png"
     st.title("Controle de Patrimônio")
