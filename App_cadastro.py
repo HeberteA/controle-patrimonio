@@ -649,6 +649,8 @@ def app_principal():
                 use_container_width=True
             )
 
+        st.write("---")
+
         if st.button("Sair / Trocar Obra"):
             for key in st.session_state.keys():
                 del st.session_state[key]
