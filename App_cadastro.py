@@ -564,7 +564,18 @@ def app_principal():
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-        menu_options = ["Dashboard", "Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens"]
+        if is_admin:
+        obras_disponiveis = ["Todas"] + lista_obras_app
+        obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
+        
+        st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
+        
+        if obra_selecionada_admin == "Todas":
+            dados_da_obra = existing_data_full
+        else:
+            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_admin].copy()
+
+        menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens", "Dashboard"]
         icons = ["bar-chart-fill", "plus-circle-fill", "card-list", "pencil-square"]
         
         selected_page = option_menu(
@@ -585,16 +596,7 @@ def app_principal():
     
     lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
 
-    if is_admin:
-        obras_disponiveis = ["Todas"] + lista_obras_app
-        obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
-        
-        st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
-        
-        if obra_selecionada_admin == "Todas":
-            dados_da_obra = existing_data_full
-        else:
-            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_admin].copy()
+
             
         with st.sidebar:
             st.write("---")
