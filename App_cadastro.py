@@ -154,10 +154,14 @@ def to_excel(df):
         return None 
 
 def to_pdf(df, obra_nome):
-    """Converte DataFrame para um arquivo PDF simples em memória."""
     try:
         pdf = FPDF(orientation='L', unit='mm', format='A4')
         pdf.add_page()
+        logo_path = "Lavie.png"
+        try:
+            pdf.image(logo_path, x=10, y=8, w=30)
+        except Exception as e:
+            print(f"Aviso: Não foi possível carregar o logo '{logo_path}'. Erro: {e}")
         pdf.set_font('Arial', 'B', 16)
         
         titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
@@ -201,7 +205,9 @@ def to_pdf(df, obra_nome):
         return None
         
 def tela_de_login():
-    st.image("Lavie.png", width=1000)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("Lavie.png", width=1000)
     st.title("Controle de Patrimônio")
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
