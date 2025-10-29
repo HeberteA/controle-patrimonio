@@ -199,6 +199,7 @@ def to_pdf(df, obra_nome):
     except Exception as e:
         st.error(f"Erro inesperado ao gerar PDF: {e}")
         return None
+        
 def tela_de_login():
     logo_path = "Lavie.png"
     st.title("Controle de Patrimônio")
@@ -436,7 +437,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                     dados_filtrados_gerenciar[RESPONSAVEL_COL].str.contains(search_term_ger, case=False, na=False)
                 ]
     
-    st.dataframe(dados_filtrados_gerenciar, use_container_width=True, hide_index=True, height=250)
+    st.dataframe(dados_filtrados_gerenciar, use_container_width=True, hide_index=True, height=500)
     st.write("---")
  
     lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (ID: {row[ID_COL]})" for _, row in dados_filtrados_gerenciar.iterrows()]
