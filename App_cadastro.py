@@ -43,7 +43,6 @@ RESPONSAVEL_COL = "responsavel"
 VALOR_COL = "valor"
 
 
-@st.cache_data
 def get_img_as_base64(file):
     try:
         with open(file, "rb") as f:
