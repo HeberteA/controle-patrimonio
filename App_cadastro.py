@@ -9,6 +9,8 @@ import plotly.express as px
 from fpdf import FPDF         
 import openpyxl      
 
+st.set_page_config(page_title="Test", page_icon="🧊")
+
 st.title("Minimal App Test - Parte 2 (Conexão)")
 
 try:
