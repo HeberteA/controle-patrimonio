@@ -29,17 +29,17 @@ if 'movement_item_id' not in st.session_state:
     st.session_state.movement_item_id = None
 
 ID_COL = "id"
-OBRA_COL = "obra"
-TOMBAMENTO_COL = "numero_tombamento"
-NOME_COL = "nome"
-STATUS_COL = "status"
-NF_NUM_COL = "numero_nota_fiscal"
-NF_LINK_COL = "link_nota_fiscal"
-ESPEC_COL = "especificacoes"
-OBS_COL = "observacoes"
-LOCAL_COL = "local_de_uso"
-RESPONSAVEL_COL = "responsavel"
-VALOR_COL = "valor"
+OBRA_COL = "Obra"
+TOMBAMENTO_COL = "N° de Tombamento"
+NOME_COL = "Nome"
+STATUS_COL = "Status"
+NF_NUM_COL = "N° da Nota Fiscal"
+NF_LINK_COL = "Nota Fiscal (Link)"
+ESPEC_COL = "Especificações"
+OBS_COL = "Observações"
+LOCAL_COL = "Local de Uso"
+RESPONSAVEL_COL = "Responsável"
+VALOR_COL = "Valor"
 
 def get_img_as_base64(file):
     try:
