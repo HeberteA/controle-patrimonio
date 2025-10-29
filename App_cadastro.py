@@ -11,23 +11,33 @@ import openpyxl
 
 st.set_page_config(page_title="Test", page_icon="🧊")
 
-st.title("Minimal App Test - Parte 2 (Conexão)")
+st.title("Minimal App Test - Parte 3 (Conexão Manual)")
 
 try:
-    st.write("Tentando criar a conexão com o Supabase...")
-    conn = st.connection("supabase", type=SupabaseConnection)
+    # --- A CORREÇÃO ESTÁ AQUI ---
+    # Estamos lendo os secrets (que sabemos que existem) e passando
+    # manualmente para a função de conexão.
+    st.write("Tentando criar a conexão MANUAL com o Supabase...")
+    conn = st.connection(
+        "supabase",
+        type=SupabaseConnection,
+        url=st.secrets["connections"]["supabase"]["url"],
+        key=st.secrets["connections"]["supabase"]["key"]
+    )
+    # --- FIM DA CORREÇÃO ---
+    
     st.write(conn) # Isso vai imprimir o objeto da conexão
-    st.success("✅ TESTE 2 SUCESSO: A conexão com o Supabase foi criada.")
+    st.success("✅ TESTE 3 SUCESSO: A conexão manual com o Supabase foi criada.")
     
     # Teste de leitura
     st.write("Tentando ler a tabela 'obras'...")
     obras_resp = conn.query("*", table="obras", ttl=300).execute()
     st.write(pd.DataFrame(obras_resp.data))
-    st.success("✅ TESTE 3 SUCESSO: A leitura da tabela 'obras' funcionou.")
+    st.success("✅ TESTE 4 SUCESSO: A leitura da tabela 'obras' funcionou.")
     
 except Exception as e:
-    st.error("❌ TESTE FALHOU: Uma das etapas da conexão ou leitura quebrou.")
-    st.exception(e)
+    st.error("❌ TESTE FALHOU: Mesmo com a conexão manual, algo quebrou.")
+    st.exception(e) # Isso vai imprimir o erro completo na tela
 
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
