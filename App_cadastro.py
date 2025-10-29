@@ -159,7 +159,7 @@ def to_pdf(df, obra_nome):
         pdf.add_page()
         logo_path = "Lavie.png"
         try:
-            pdf.image(logo_path, x=10, y=8, w=50)
+            pdf.image(logo_path, x=10, y=3, w=50)
         except Exception as e:
             print(f"Aviso: Não foi possível carregar o logo '{logo_path}'. Erro: {e}")
         pdf.set_font('Arial', 'B', 16)
