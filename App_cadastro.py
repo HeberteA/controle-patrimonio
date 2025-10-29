@@ -219,7 +219,7 @@ def tela_de_login():
             obra_selecionada = st.selectbox("Selecione a Obra", options=lista_obras, index=None, placeholder="Escolha a obra...")
             if obra_selecionada:
                 codigo_acesso = st.text_input("Código de Acesso", type="password", key="obra_password")
-                if st.button("Entrar na Obra"):
+                if st.button("Entrar na Obra", type="primary"):
                     if codigo_acesso == codigos_obras.get(obra_selecionada):
                         st.session_state.logged_in = True
                         st.session_state.is_admin = False
@@ -233,7 +233,7 @@ def tela_de_login():
     with tab2:
         st.subheader("Login de Administrador")
         admin_password = st.text_input("Senha do Administrador", type="password", key="admin_password")
-        if st.button("Entrar como Administrador"):
+        if st.button("Entrar como Administrador", type="primary"):
             if admin_password == st.secrets.admin.password:
                 st.session_state.logged_in = True
                 st.session_state.is_admin = True
@@ -266,7 +266,7 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         status_counts = dados_da_obra[STATUS_COL].value_counts().reset_index()
         
         fig_status = px.pie(status_counts, names=STATUS_COL, values='count', 
-                            title="Distribuição de Itens por Status")
+                            title="Distribuição de Itens por Status", color='#E37026')
         st.plotly_chart(fig_status, use_container_width=True)
 
     with col_graf2:
@@ -274,7 +274,7 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         df_valor_local = dados_da_obra.groupby(LOCAL_COL)[VALOR_COL].sum().reset_index().sort_values(by=VALOR_COL, ascending=False)
         
         fig_local = px.bar(df_valor_local, x=LOCAL_COL, y=VALOR_COL, 
-                           title="Valor Total (R$) por Local de Uso", text_auto='.2s')
+                           title="Valor Total (R$) por Local de Uso", text_auto='.2s', color='#E37026')
         fig_local.update_traces(textposition='outside')
         st.plotly_chart(fig_local, use_container_width=True)
 
@@ -282,7 +282,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
     st.header("Cadastrar Novo Item", divider='rainbow')
     obra_para_cadastro = None
     if is_admin:
-        obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...")
+        obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...", type="primary")
     else:
         obra_para_cadastro = st.session_state.selected_obra
 
@@ -305,7 +305,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             responsavel = st.text_input("Responsável*")
     
         uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
-        submitted = st.form_submit_button("Cadastrar Item")
+        submitted = st.form_submit_button("Cadastrar Item", type="primary")
 
         if submitted:
             if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
@@ -652,7 +652,7 @@ def app_principal():
 
         st.write("---")
 
-        if st.button("Sair / Trocar Obra"):
+        if st.button("Sair / Trocar Obra", type="primary"):
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.cache_data.clear()
