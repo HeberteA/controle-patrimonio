@@ -201,7 +201,7 @@ def to_pdf(df, obra_nome):
         return None
         
 def tela_de_login():
-    st.image("Lavie.png", width=1500)
+    st.image("Lavie.png", width=1000)
     st.title("Controle de Patrimônio")
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
