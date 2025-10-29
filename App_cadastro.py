@@ -287,7 +287,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
         obra_para_cadastro = st.session_state.selected_obra
 
     if not obra_para_cadastro:
-        st.warning("Selecione uma obra para iniciar o cadastro.")
+        st.info("Selecione uma obra para iniciar o cadastro.")
         return
 
     with st.form("cadastro_form", clear_on_submit=True):
