@@ -171,7 +171,7 @@ def to_pdf(df, obra_nome):
         pdf.set_font('Arial', 'B', 8)
         
         col_widths = {
-            TOMBAMENTO_COL: 25, 
+            TOMBAMENTO_COL: 50, 
             NOME_COL: 60, 
             STATUS_COL: 30, 
             LOCAL_COL: 40, 
