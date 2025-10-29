@@ -266,7 +266,8 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         status_counts = dados_da_obra[STATUS_COL].value_counts().reset_index()
         
         fig_status = px.pie(status_counts, names=STATUS_COL, values='count', 
-                            title="Distribuição de Itens por Status", color='#E37026')
+                            title="Distribuição de Itens por Status")
+        fig_status.update_traces(marker_color='#E37026)
         st.plotly_chart(fig_status, use_container_width=True)
 
     with col_graf2:
@@ -274,8 +275,8 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         df_valor_local = dados_da_obra.groupby(LOCAL_COL)[VALOR_COL].sum().reset_index().sort_values(by=VALOR_COL, ascending=False)
         
         fig_local = px.bar(df_valor_local, x=LOCAL_COL, y=VALOR_COL, 
-                           title="Valor Total (R$) por Local de Uso", text_auto='.2s', color='#E37026')
-        fig_local.update_traces(textposition='outside')
+                           title="Valor Total (R$) por Local de Uso", text_auto='.2s')
+        fig_local.update_traces(textposition='outside', marker_color='#E37026)
         st.plotly_chart(fig_local, use_container_width=True)
 
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
