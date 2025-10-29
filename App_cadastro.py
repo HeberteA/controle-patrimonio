@@ -1,20 +1,21 @@
 import streamlit as st
 import pandas as pd
-from st_supabase_connection import SupabaseConnection 
+from st_supabase_connection import SupabaseConnection
 from streamlit_option_menu import option_menu 
 import base64
 import io
 from datetime import datetime
-import plotly.express as px 
-from fpdf import FPDF         
-import openpyxl      
+import plotly.express as px
+from fpdf import FPDF
+import openpyxl 
 
 st.set_page_config(
     page_title="Controle de Patrimônio Lavie",
-    page_icon="Lavie1.png", 
+    page_icon="Lavie1.png",
     layout="wide"
 )
 
+# --- Inicialização do Session State ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'is_admin' not in st.session_state:
@@ -29,17 +30,17 @@ if 'movement_item_id' not in st.session_state:
     st.session_state.movement_item_id = None
 
 ID_COL = "id"
-OBRA_COL = "Obra"
-TOMBAMENTO_COL = "N_de_Tombamento"
-NOME_COL = "Nome"
-STATUS_COL = "Status"
-NF_NUM_COL = "N_da_Nota_Fiscal"
-NF_LINK_COL = "Nota_Fiscal _Link"
-ESPEC_COL = "Especificações"
-OBS_COL = "Observações"
-LOCAL_COL = "Local_de_Uso"
-RESPONSAVEL_COL = "Responsável"
-VALOR_COL = "Valor"
+OBRA_COL = "obra"
+TOMBAMENTO_COL = "numero_tombamento"
+NOME_COL = "nome"
+STATUS_COL = "status"
+NF_NUM_COL = "numero_nota_fiscal"
+NF_LINK_COL = "link_nota_fiscal"
+ESPEC_COL = "especificacoes"
+OBS_COL = "observacoes"
+LOCAL_COL = "local_de_uso"
+RESPONSAVEL_COL = "responsavel"
+VALOR_COL = "valor"
 
 def get_img_as_base64(file):
     try:
@@ -97,66 +98,109 @@ except Exception as e:
 def carregar_dados_app():
     try:
         status_resp = conn.table("status").select("*").execute()
-        lista_status = [row['Nome do Status'] for row in status_resp.data]
+        lista_status = [row['nome_do_status'] for row in status_resp.data]
         
         obras_resp = conn.table("obras").select("*").execute()
-        lista_obras = [row['Nome da Obra'] for row in obras_resp.data]
+        lista_obras = [row['nome_da_obra'] for row in obras_resp.data]
         
         patrimonio_resp = conn.table("patrimonio").select("*").execute()
         patrimonio_df = pd.DataFrame(patrimonio_resp.data)
+        
+        colunas_patrimonio = [
+            ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, 
+            OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, 
+            NF_LINK_COL, VALOR_COL, STATUS_COL
+        ]
+
         if patrimonio_df.empty: 
-             patrimonio_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL])
+             patrimonio_df = pd.DataFrame(columns=colunas_patrimonio)
+        
         if VALOR_COL in patrimonio_df.columns:
             patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
+        else:
+            patrimonio_df[VALOR_COL] = 0.0 
 
         movimentacoes_resp = conn.table("movimentacoes").select("*").execute()
         movimentacoes_df = pd.DataFrame(movimentacoes_resp.data)
         if movimentacoes_df.empty:
-            movimentacoes_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "Tipo_de_Movimentação", "Data _Hora", "Responsável_pela_Movimentação", "Observações"])
+            movimentacoes_df = pd.DataFrame(columns=[
+                ID_COL, OBRA_COL, TOMBAMENTO_COL, "tipo_movimentacao", 
+                "data_hora", "responsavel_movimentacao", "observacoes"
+            ])
 
         return lista_status, lista_obras, patrimonio_df, movimentacoes_df
     
+    except KeyError as e:
+        st.error(f"Erro Crítico de 'KeyError' ao carregar os dados: {e}")
+        st.error(f"Isso significa que o nome de uma coluna no seu Supabase (ex: '{e.args[0]}') não bate com o código.")
+        st.error("Verifique suas tabelas 'status' e 'obras' no Supabase e compare com o código.")
+        st.exception(e)
+        return [], [], pd.DataFrame(), pd.DataFrame()
     except Exception as e:
-        st.error(f"Erro ao carregar dados do Supabase. Verifique os nomes das colunas (ex: 'nome_do_status'). Erro: {e}")
+        st.error(f"Erro ao carregar dados do Supabase: {e}")
+        st.exception(e)
         return [], [], pd.DataFrame(), pd.DataFrame()
 
 @st.cache_data
 def to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Patrimonio')
-    processed_data = output.getvalue()
-    return processed_data
+    """Converte DataFrame para um arquivo Excel em memória."""
+    try:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Patrimonio')
+        processed_data = output.getvalue()
+        return processed_data
+    except Exception as e:
+        st.error(f"Erro ao gerar Excel: {e}")
+        return None 
 
 def to_pdf(df, obra_nome):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    
-    titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
-    pdf.cell(0, 10, titulo, 0, 1, 'C')
-    pdf.ln(10)
+    """Converte DataFrame para um arquivo PDF simples em memória."""
+    try:
+        pdf = FPDF(orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 16)
+        
+        titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
+        pdf.cell(0, 10, titulo, 0, 1, 'C')
+        pdf.ln(10)
 
-    pdf.set_font('Arial', 'B', 8)
-    col_widths = {TOMBAMENTO_COL: 25, NOME_COL: 60, STATUS_COL: 30, LOCAL_COL: 40, RESPONSAVEL_COL: 40, VALOR_COL: 25}
-    cols_to_export = list(col_widths.keys())
-    
-    for col_name in cols_to_export:
-        pdf.cell(col_widths[col_name], 7, col_name.replace("_", " ").title(), 1, 0, 'C')
-    pdf.ln()
-
-    pdf.set_font('Arial', '', 8)
-    df_pdf = df[cols_to_export].fillna('') 
-    
-    for _, row in df_pdf.iterrows():
+        pdf.set_font('Arial', 'B', 8)
+        
+        col_widths = {
+            TOMBAMENTO_COL: 25, 
+            NOME_COL: 60, 
+            STATUS_COL: 30, 
+            LOCAL_COL: 40, 
+            RESPONSAVEL_COL: 40, 
+            VALOR_COL: 25
+        }
+        cols_to_export = list(col_widths.keys())
+        
         for col_name in cols_to_export:
-            text = str(row[col_name]).encode('latin-1', 'replace').decode('latin-1')
-            pdf.cell(col_widths[col_name], 6, text, 1)
+            pdf.cell(col_widths[col_name], 7, col_name.replace("_", " ").title(), 1, 0, 'C')
         pdf.ln()
 
-    return pdf.output(dest='S')
+        pdf.set_font('Arial', '', 8)
+        
+        df_pdf = df[cols_to_export].fillna('') 
+        
+        for _, row in df_pdf.iterrows():
+            for col_name in cols_to_export:
+                text = str(row[col_name]).encode('latin-1', 'replace').decode('latin-1')
+                pdf.cell(col_widths[col_name], 6, text, 1)
+            pdf.ln()
 
+        return pdf.output(dest='S')
     
+    except KeyError as e:
+        st.error(f"Erro ao gerar PDF (KeyError): {e}")
+        st.error("Isso geralmente acontece porque os dados estão vazios (devido a um erro anterior) ou as 'Constantes das Colunas' no código não batem com o Supabase.")
+        return None 
+    except Exception as e:
+        st.error(f"Erro inesperado ao gerar PDF: {e}")
+        return None
+
 def tela_de_login():
     logo_path = "Lavie.png"
     st.title("Controle de Patrimônio")
@@ -169,7 +213,7 @@ def tela_de_login():
             _, lista_obras, _, _ = carregar_dados_app()
             
             if not lista_obras:
-                st.error("Nenhuma obra cadastrada no sistema.")
+                st.info("Nenhuma obra cadastrada no sistema. (Ou falha ao carregar - verifique os logs de erro acima)")
                 return
 
             codigos_obras = st.secrets.obra_codes
@@ -202,7 +246,7 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
     st.header("Dashboard de Patrimônio", divider='rainbow')
 
     if dados_da_obra.empty:
-        st.info("Nenhum dado disponível para exibir no dashboard.")
+        st.info("Nenhum dado disponível para exibir no dashboard (ou falha no carregamento).")
         return
 
     total_itens = dados_da_obra.shape[0]
@@ -311,7 +355,6 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                 
                 try:
                     conn.table("patrimonio").insert(novo_item_dict).execute()
-                    
                     st.success(f"Item '{nome_produto}' cadastrado para a obra {obra_para_cadastro}! Tombamento: {num_tombamento_final}")
                     st.cache_data.clear() 
                     st.rerun()
@@ -346,8 +389,8 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
                 ]
         
         with col_f3:
-            min_val = float(dados_da_obra[VALOR_COL].min()) if not dados_da_obra.empty else 0.0
-            max_val = float(dados_da_obra[VALOR_COL].max()) if not dados_da_obra.empty else 0.0
+            min_val = float(dados_da_obra[VALOR_COL].min())
+            max_val = float(dados_da_obra[VALOR_COL].max())
             
             if min_val < max_val: 
                 filtro_valor = st.slider("Filtrar por Valor (R$)", 
@@ -404,7 +447,13 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
     if item_selecionado_gerenciar:
         item_id_selecionado = int(item_selecionado_gerenciar.split("(ID: ")[1].replace(")", ""))
         
-        item_data_series = dados_filtrados_gerenciar[dados_filtrados_gerenciar[ID_COL] == item_id_selecionado].iloc[0]
+        item_data_series_list = dados_filtrados_gerenciar[dados_filtrados_gerenciar[ID_COL] == item_id_selecionado]
+        
+        if item_data_series_list.empty:
+            st.error("Item não encontrado. Por favor, atualize a página.")
+            return
+            
+        item_data_series = item_data_series_list.iloc[0]
         tombamento_selecionado = item_data_series[TOMBAMENTO_COL]
         obra_do_item = item_data_series[OBRA_COL]
         
@@ -438,7 +487,6 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
             if c1_del.button("Sim, tenho certeza e quero remover", use_container_width=True, type="primary"):
                 try:
                     conn.table("patrimonio").delete().eq(ID_COL, item_id_selecionado).execute()
-                    
                     st.success(f"Item {tombamento_selecionado} da obra {obra_do_item} removido!")
                     st.session_state.confirm_delete = False
                     st.session_state.edit_item_id = None
@@ -477,7 +525,6 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                         try:
                             conn.table("movimentacoes").insert(nova_movimentacao).execute()
                             conn.table("patrimonio").update({STATUS_COL: novo_status}).eq(ID_COL, item_id_selecionado).execute()
-                            
                             st.success("Movimentação registrada com sucesso!")
                             st.session_state.movement_item_id = None
                             st.cache_data.clear()
@@ -486,7 +533,6 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                             st.error(f"Erro ao registrar movimentação: {e}")
                         
         if st.session_state.edit_item_id == item_id_selecionado and not st.session_state.confirm_delete:
-            
             with st.form("edit_form"):
                 st.subheader(f"Editando Item: {tombamento_selecionado} (Obra: {obra_do_item})")
                 
@@ -505,38 +551,36 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                 if submitted_edit:
                     if not num_nota_fiscal_edit or not tomb_edit_novo:
                         st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}*' são obrigatórios.")
-                        return
-
-                    edit_input_limpo = tomb_edit_novo.strip()
-                    
-                    condicao_outro_item = (existing_data_full[OBRA_COL] == obra_do_item) & \
-                                          (existing_data_full[TOMBAMENTO_COL].astype(str).str.strip() == edit_input_limpo) & \
-                                          (existing_data_full[ID_COL] != item_id_selecionado)
-                    
-                    if not existing_data_full[condicao_outro_item].empty:
-                        st.error(f"Erro: O N° de Tombamento '{edit_input_limpo}' já existe para outro item nesta obra.")
-                    else:
-                        update_dict = {
-                            TOMBAMENTO_COL: edit_input_limpo,
-                            STATUS_COL: status_edit,
-                            NOME_COL: nome_edit,
-                            NF_NUM_COL: num_nota_fiscal_edit,
-                            ESPEC_COL: especificacoes_edit,
-                            OBS_COL: observacoes_edit,
-                            LOCAL_COL: local_edit,
-                            RESPONSAVEL_COL: responsavel_edit,
-                            VALOR_COL: valor_edit
-                        }
+                    else: 
+                        edit_input_limpo = tomb_edit_novo.strip()
                         
-                        try:
-                            conn.table("patrimonio").update(update_dict).eq(ID_COL, item_id_selecionado).execute()
-                                
-                            st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
-                            st.session_state.edit_item_id = None
-                            st.cache_data.clear()
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao atualizar item: {e}")
+                        condicao_outro_item = (existing_data_full[OBRA_COL] == obra_do_item) & \
+                                              (existing_data_full[TOMBAMENTO_COL].astype(str).str.strip() == edit_input_limpo) & \
+                                              (existing_data_full[ID_COL] != item_id_selecionado)
+                        
+                        if not existing_data_full[condicao_outro_item].empty:
+                            st.error(f"Erro: O N° de Tombamento '{edit_input_limpo}' já existe para outro item nesta obra.")
+                        else:
+                            update_dict = {
+                                TOMBAMENTO_COL: edit_input_limpo,
+                                STATUS_COL: status_edit,
+                                NOME_COL: nome_edit,
+                                NF_NUM_COL: num_nota_fiscal_edit,
+                                ESPEC_COL: especificacoes_edit,
+                                OBS_COL: observacoes_edit,
+                                LOCAL_COL: local_edit,
+                                RESPONSAVEL_COL: responsavel_edit,
+                                VALOR_COL: valor_edit
+                            } 
+                            
+                            try:
+                                conn.table("patrimonio").update(update_dict).eq(ID_COL, item_id_selecionado).execute()
+                                st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
+                                st.session_state.edit_item_id = None
+                                st.cache_data.clear()
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao atualizar item: {e}")
             
         st.write("---")
         st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
@@ -553,14 +597,11 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
 def app_principal():
     is_admin = st.session_state.is_admin
     obra_selecionada_sidebar = None 
+
     lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
+    
     with st.sidebar:
         logo_path = "Lavie.png"
-        try:
-            st.image(logo_path, width=150)
-        except Exception:
-            pass
-
         st.header("Navegação")
         if is_admin:
             st.info("Logado como **Administrador**.")
@@ -581,7 +622,7 @@ def app_principal():
         st.write("---")
         
         if is_admin:
-            obras_disponiveis = ["Todas"] + lista_obras_app
+            obras_disponiveis = ["Todas"] + lista_obras_app 
             obra_selecionada_sidebar = st.selectbox("Filtrar Visão por Obra", obras_disponiveis)
             
             st.write("---")
@@ -610,24 +651,32 @@ def app_principal():
                 use_container_width=True
             )
 
-        st.write("---")
         if st.button("Sair / Trocar Obra"):
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.cache_data.clear()
             st.rerun()
     
-    
-    
+    if is_admin:
+        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
+        if obra_selecionada_sidebar == "Todas":
+            dados_da_obra = existing_data_full
+        else:
+            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+            
+    else:
+        obra_logada = st.session_state.selected_obra
+        st.subheader(f"Obra: **{obra_logada}**")
+        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
-    if selected_page == "Cadastrar Item":
+    if selected_page == "Dashboard":
+        pagina_dashboard(dados_da_obra, df_movimentacoes)
+    elif selected_page == "Cadastrar Item":
         pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data_full)
     elif selected_page == "Itens Cadastrados":
         pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status)
     elif selected_page == "Gerenciar Itens":
         pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status)
-    elif selected_page == "Dashboard":
-        pagina_dashboard(dados_da_obra, df_movimentacoes)
 
 if not st.session_state.logged_in:
     tela_de_login()
