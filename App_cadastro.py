@@ -564,9 +564,9 @@ def app_principal():
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-    if is_admin:
-        obras_disponiveis = ["Todas"] + lista_obras_app
-        obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
+        if is_admin:
+            obras_disponiveis = ["Todas"] + lista_obras_app
+            obra_selecionada_admin = st.sidebar.selectbox("Filtrar Visão por Obra", obras_disponiveis)
         
         st.subheader(f"Visão da Obra: **{obra_selecionada_admin}**")
         
