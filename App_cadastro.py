@@ -30,14 +30,14 @@ if 'movement_item_id' not in st.session_state:
 
 ID_COL = "id"
 OBRA_COL = "Obra"
-TOMBAMENTO_COL = "N de Tombamento"
+TOMBAMENTO_COL = "N_de_Tombamento"
 NOME_COL = "Nome"
 STATUS_COL = "Status"
-NF_NUM_COL = "N° da Nota Fiscal"
-NF_LINK_COL = "Nota Fiscal (Link)"
+NF_NUM_COL = "N_da_Nota_Fiscal"
+NF_LINK_COL = "Nota_Fiscal _Link"
 ESPEC_COL = "Especificações"
 OBS_COL = "Observações"
-LOCAL_COL = "Local de Uso"
+LOCAL_COL = "Local_de_Uso"
 RESPONSAVEL_COL = "Responsável"
 VALOR_COL = "Valor"
 
@@ -112,7 +112,7 @@ def carregar_dados_app():
         movimentacoes_resp = conn.table("movimentacoes").select("*").execute()
         movimentacoes_df = pd.DataFrame(movimentacoes_resp.data)
         if movimentacoes_df.empty:
-            movimentacoes_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "Tipo de Movimentação", "Data e Hora", "Responsável pela Movimentação", "Observações"])
+            movimentacoes_df = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "Tipo_de_Movimentação", "Data _Hora", "Responsável_pela_Movimentação", "Observações"])
 
         return lista_status, lista_obras, patrimonio_df, movimentacoes_df
     
@@ -297,14 +297,14 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
 
                 novo_item_dict = {
                     OBRA_COL: Obra,
-                    TOMBAMENTO_COL: N de Tombamento,
+                    TOMBAMENTO_COL: N_de_Tombamento,
                     NOME_COL: Nome,
                     ESPEC_COL: Especificações,
                     OBS_COL: Observações,
-                    LOCAL_COL: Local de Uso,
+                    LOCAL_COL: Local_de_Uso,
                     RESPONSAVEL_COL: Responsável,
-                    NF_NUM_COL: N da Nota Fiscal,
-                    NF_LINK_COL: Nota Fiscal (Link),
+                    NF_NUM_COL: N_da_Nota_Fiscal,
+                    NF_LINK_COL: Nota_Fiscal _Link,
                     VALOR_COL: Valor,
                     STATUS_COL: Status
                 }
@@ -472,7 +472,6 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                             "responsavel_movimentacao": responsavel_mov,
                             OBS_COL: obs_mov
                         }
-                        
                         novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo"
                         
                         try:
@@ -531,14 +530,13 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                         
                         try:
                             conn.table("patrimonio").update(update_dict).eq(ID_COL, item_id_selecionado).execute()
-                            
-                            st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
-                            st.session_state.edit_item_id = None
-                            st.cache_data.clear()
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao atualizar item: {e}")
-                            
+                                
+                                st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
+                                st.session_state.edit_item_id = None
+                                st.cache_data.clear()
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao atualizar item: {e}")
             
         st.write("---")
         st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
@@ -554,6 +552,7 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
 
 def app_principal():
     is_admin = st.session_state.is_admin
+    obra_selecionada_sidebar = None 
     lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
     with st.sidebar:
         logo_path = "Lavie.png"
