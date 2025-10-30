@@ -310,7 +310,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             local_uso = st.text_input("Local de Uso")
             responsavel = st.text_input("Responsável")
     
-        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf", type="primary")
+        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
         submitted = st.form_submit_button("Cadastrar Item", type="primary", use_container_width=True)
 
         if submitted:
