@@ -310,7 +310,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             local_uso = st.text_input("Local de Uso")
             responsavel = st.text_input("Responsável")
     
-        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
+        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf", type="primary")
         submitted = st.form_submit_button("Cadastrar Item", type="primary", use_container_width=True)
 
         if submitted:
@@ -408,6 +408,15 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
                     (dados_filtrados[VALOR_COL] <= filtro_valor[1])
                 ]
     
+    st.write("---")
+    if not dados_filtrados.empty:
+        st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
+            ID_COL: None, 
+            NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir Link")
+        })
+    else:
+        st.info("Nenhum item encontrado com os filtros aplicados.")
+
     st.write("---") 
     st.subheader("Exportar Visão Filtrada")
     
@@ -433,15 +442,8 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
             use_container_width=True,
             disabled=dados_filtrados.empty 
         )
-    
-    st.write("---")
-    if not dados_filtrados.empty:
-        st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
-            ID_COL: None, 
-            NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir Link")
-        })
-    else:
-        st.info("Nenhum item encontrado com os filtros aplicados.")
+
+
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
