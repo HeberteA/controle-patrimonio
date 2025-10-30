@@ -248,41 +248,161 @@ def tela_de_login():
                 st.error("Senha de administrador incorreta.")
 
 def pagina_dashboard(dados_da_obra, df_movimentacoes):
-    st.header("Dashboard de Patrimônio", divider='rainbow')
+    st.header("Análise de Ativos (Dashboard Sênior)", divider='rainbow')
+
+    COR_PRINCIPAL = "#E37026"
 
     if dados_da_obra.empty:
-        st.info("Nenhum dado disponível para exibir no dashboard (ou falha no carregamento).")
+        st.info("Nenhum dado de patrimônio disponível para exibir no dashboard.")
         return
 
+    dados_com_idade = dados_da_obra.copy()
+    idade_media_dias = None
+
+    if not df_movimentacoes.empty:
+        df_movimentacoes['data_hora'] = pd.to_datetime(df_movimentacoes['data_hora'])
+        entradas = df_movimentacoes[df_movimentacoes['tipo_movimentacao'] == 'Entrada']
+        
+        if not entradas.empty:
+            aquisicoes = entradas.groupby(TOMBAMENTO_COL)['data_hora'].min().reset_index()
+            aquisicoes.rename(columns={'data_hora': 'data_aquisicao'}, inplace=True)
+            
+            dados_com_idade = pd.merge(
+                dados_com_idade, 
+                aquisicoes, 
+                on=TOMBAMENTO_COL, 
+                how='left'
+            )
+            
+            if 'data_aquisicao' in dados_com_idade.columns:
+                agora_utc = datetime.now(datetime.timezone.utc)
+                dados_com_idade['data_aquisicao'] = pd.to_datetime(dados_com_idade['data_aquisicao'], utc=True)
+                
+                dados_com_idade['idade_dias'] = (agora_utc - dados_com_idade['data_aquisicao']).dt.days
+                idade_media_dias = dados_com_idade['idade_dias'].mean()
+
+    st.subheader("Visão Geral do Patrimônio")
     total_itens = dados_da_obra.shape[0]
     valor_total = dados_da_obra[VALOR_COL].sum()
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Itens", f"{total_itens} un.")
     with col2:
         st.metric("Valor Total do Patrimônio", f"R$ {valor_total:,.2f}")
+    with col3:
+        if idade_media_dias is not None:
+            st.metric("Idade Média dos Ativos", f"{idade_media_dias:,.0f} dias")
+        else:
+            st.metric("Idade Média dos Ativos", "N/A")
+            
+    st.write("---")
+
+    st.subheader("Análise de Custo e Valor")
+    col_v1, col_v2 = st.columns([1, 2])
+    
+    with col_v1:
+        st.markdown("**Top 10 Ativos Mais Valiosos**")
+        top_10_valiosos = dados_da_obra.sort_values(by=VALOR_COL, ascending=False).head(10)
+        st.dataframe(
+            top_10_valiosos[[NOME_COL, VALOR_COL, RESPONSAVEL_COL]], 
+            use_container_width=True,
+            column_config={
+                VALOR_COL: st.column_config.NumberColumn(format="R$ %.2f")
+            }
+        )
+    
+    with col_v2:
+        st.markdown("**Distribuição do Valor dos Ativos (Histograma)**")
+        fig_hist_valor = px.histogram(
+            dados_da_obra, 
+            x=VALOR_COL, 
+            nbins=50, 
+            title="Histograma: Frequência de Itens por Faixa de Valor"
+        )
+        fig_hist_valor.update_traces(marker_color=COR_PRINCIPAL)
+        fig_hist_valor.update_layout(yaxis_title="Contagem de Itens", xaxis_title="Valor (R$)")
+        st.plotly_chart(fig_hist_valor, use_container_width=True)
 
     st.write("---")
-    
-    col_graf1, col_graf2 = st.columns(2)
-    
-    with col_graf1:
-        st.subheader("Itens por Status")
-        status_counts = dados_da_obra[STATUS_COL].value_counts().reset_index()
-        
-        fig_status = px.pie(status_counts, names=STATUS_COL, values='count', 
-                            title="Distribuição de Itens por Status")
-        st.plotly_chart(fig_status, use_container_width=True)
 
-    with col_graf2:
-        st.subheader("Valor por Local de Uso")
-        df_valor_local = dados_da_obra.groupby(LOCAL_COL)[VALOR_COL].sum().reset_index().sort_values(by=VALOR_COL, ascending=False)
-        
-        fig_local = px.bar(df_valor_local, x=LOCAL_COL, y=VALOR_COL, 
-                           title="Valor Total (R$) por Local de Uso", text_auto='.2s')
-        fig_local.update_traces(textposition='outside', marker_color='#E37026')
-        st.plotly_chart(fig_local, use_container_width=True)
+    st.subheader("Análise de Aquisição e Operações ao Longo do Tempo")
+    
+    col_t1, col_t2 = st.columns(2)
+    
+    with col_t1:
+        st.markdown("**Aquisição de Ativos ao Longo do Tempo**")
+        if 'data_aquisicao' in dados_com_idade.columns and not dados_com_idade['data_aquisicao'].isnull().all():
+            aquisicoes_no_tempo = dados_com_idade.set_index('data_aquisicao').resample('M')[VALOR_COL].sum().reset_index()
+            aquisicoes_no_tempo = aquisicoes_no_tempo[aquisicoes_no_tempo[VALOR_COL] > 0]
+            
+            fig_aquisicao = px.line(
+                aquisicoes_no_tempo, 
+                x='data_aquisicao', 
+                y=VALOR_COL, 
+                title="Valor Adquirido por Mês",
+                markers=True
+            )
+            fig_aquisicao.update_traces(line_color=COR_PRINCIPAL, marker_color=COR_PRINCIPAL)
+            fig_aquisicao.update_layout(xaxis_title="Data da Aquisição", yaxis_title="Valor Adquirido (R$)")
+            st.plotly_chart(fig_aquisicao, use_container_width=True)
+        else:
+            st.info("Não há dados de 'Entrada' suficientes na tabela de movimentações para gerar a análise de aquisição.")
+
+    with col_t2:
+        st.markdown("**Fluxo de Movimentações (Entrada vs. Saída)**")
+        if not df_movimentacoes.empty:
+            mov_no_tempo = df_movimentacoes.set_index('data_hora').groupby('tipo_movimentacao').resample('M').size().reset_index(name='contagem')
+            
+            color_map = {'Entrada': COR_PRINCIPAL, 'Saída': '#bec8c3'}
+            
+            fig_mov = px.line(
+                mov_no_tempo,
+                x='data_hora',
+                y='contagem',
+                color='tipo_movimentacao',
+                color_discrete_map=color_map, 
+                title="Movimentações por Mês",
+                markers=True
+            )
+            fig_mov.update_layout(xaxis_title="Data da Movimentação", yaxis_title="Número de Movimentações")
+            st.plotly_chart(fig_mov, use_container_width=True)
+        else:
+            st.info("Não há dados na tabela de movimentações.")
+            
+    st.write("---")
+    
+    st.subheader("Análise de Responsabilidade e Risco")
+    
+    col_r1, col_r2 = st.columns(2)
+    
+    with col_r1:
+        st.markdown("**Valor Total (R$) por Responsável**")
+        valor_por_resp = dados_da_obra.groupby(RESPONSAVEL_COL)[VALOR_COL].sum().sort_values(ascending=False).reset_index()
+        fig_resp_val = px.bar(
+            valor_por_resp,
+            x=RESPONSAVEL_COL,
+            y=VALOR_COL,
+            title="Valor de Ativos por Responsável",
+            text_auto='.2s'
+        )
+        fig_resp_val.update_traces(marker_color=COR_PRINCIPAL, textposition='outside')
+        st.plotly_chart(fig_resp_val, use_container_width=True)
+
+    with col_r2:
+        st.markdown("**Análise de Status dos Ativos**")
+        if not dados_com_idade.empty:
+            status_counts = dados_com_idade[STATUS_COL].value_counts().reset_index()
+            fig_status = px.pie(
+                status_counts, 
+                names=STATUS_COL, 
+                values='count', 
+                title="Distribuição de Itens por Status",
+                color_discrete_sequence=px.colors.sequential.Oranges_r 
+            )
+            st.plotly_chart(fig_status, use_container_width=True)
+        else:
+            st.info("Não há dados de status para analisar.")
 
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
     st.header("Cadastrar Novo Item", divider='rainbow')
