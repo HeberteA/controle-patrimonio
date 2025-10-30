@@ -770,6 +770,12 @@ def app_principal():
             icons=icons,
             menu_icon="cast",
             default_index=0,
+            styles={ 
+                "container": {"padding": "5px !important", "background-color": "transparent"},
+                "icon": {"font-size": "18px"}, 
+                "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
+                "nav-link-selected": {"background-color": "#E37026"}, 
+            }
         )
 
         if is_admin:
