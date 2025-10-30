@@ -248,7 +248,7 @@ def tela_de_login():
                 st.error("Senha de administrador incorreta.")
 
 def pagina_dashboard(dados_da_obra, df_movimentacoes):
-    st.header("Análise de Ativos (Dashboard Sênior)", divider='rainbow')
+    st.header("Análise de Ativos", divider='rainbow')
 
     COR_PRINCIPAL = "#E37026"
 
@@ -313,12 +313,13 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
         )
     
     with col_v2:
-        st.markdown("**Distribuição do Valor dos Ativos (Histograma)**")
+        st.markdown("**Distribuição do Valor dos Ativos**")
         fig_hist_valor = px.histogram(
             dados_da_obra, 
             x=VALOR_COL, 
             nbins=50, 
             title="Histograma: Frequência de Itens por Faixa de Valor"
+            text_auto=True
         )
         fig_hist_valor.update_traces(marker_color=COR_PRINCIPAL)
         fig_hist_valor.update_layout(yaxis_title="Contagem de Itens", xaxis_title="Valor (R$)")
