@@ -318,7 +318,7 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
             dados_da_obra, 
             x=VALOR_COL, 
             nbins=50, 
-            title="Histograma: Frequência de Itens por Faixa de Valor"
+            title="Histograma: Frequência de Itens por Faixa de Valor",
             text_auto=True
         )
         fig_hist_valor.update_traces(marker_color=COR_PRINCIPAL)
