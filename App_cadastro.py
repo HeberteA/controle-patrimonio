@@ -311,7 +311,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             responsavel = st.text_input("Responsável")
     
         uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
-        submitted = st.form_submit_button("Cadastrar Item", type="primary")
+        submitted = st.form_submit_button("Cadastrar Item", type="primary", use_container_width=True)
 
         if submitted:
             if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
@@ -394,8 +394,8 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
                 ]
         
         with col_f3:
-            min_val = float(dados_da_obra[VALOR_COL].min())
-            max_val = float(dados_da_obra[VALOR_COL].max())
+            min_val = float(dados_da_obra[VALOR_COL].min()) if not dados_da_obra.empty else 0.0
+            max_val = float(dados_da_obra[VALOR_COL].max()) if not dados_da_obra.empty else 0.0
             
             if min_val < max_val: 
                 filtro_valor = st.slider("Filtrar por Valor (R$)", 
@@ -407,8 +407,34 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
                     (dados_filtrados[VALOR_COL] >= filtro_valor[0]) &
                     (dados_filtrados[VALOR_COL] <= filtro_valor[1])
                 ]
-    st.write("---")
+    
+    st.write("---") 
+    st.subheader("Exportar Visão Filtrada")
+    
+    excel_data = to_excel(dados_filtrados)
+    pdf_data = to_pdf(dados_filtrados, "Visão Filtrada") 
 
+    col_ex1, col_ex2 = st.columns(2)
+    with col_ex1:
+        st.download_button(
+            label="📥 Baixar Relatório (Excel)",
+            data=excel_data,
+            file_name=f"relatorio_patrimonio_filtrado.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            disabled=dados_filtrados.empty 
+        )
+    with col_ex2:
+        st.download_button(
+            label="📄 Baixar Relatório (PDF)",
+            data=pdf_data,
+            file_name=f"relatorio_patrimonio_filtrado.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            disabled=dados_filtrados.empty 
+        )
+    
+    st.write("---")
     if not dados_filtrados.empty:
         st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
             ID_COL: None, 
@@ -416,7 +442,6 @@ def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
         })
     else:
         st.info("Nenhum item encontrado com os filtros aplicados.")
-
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
