@@ -790,6 +790,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="display:none;" id="dl_link_{row[ID_COL]}">Download</a><script>document.getElementById("dl_link_{row[ID_COL]}").click();</script>'
                                 st.markdown(f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold; display:block; text-align:center;">⬇️ Baixar PDF</a>', unsafe_allow_html=True)
 
+                    st.markdown("---")
     with tab_vis_locacao:
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -814,14 +815,15 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         st.markdown(f"""
         <div style="background-color: transparent; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-botton:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
+                <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Resumo Locações'}</h4>
                 <div style="text-align:right;">
                     <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL MENSAL ESTIMADO</div>
                     <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
                 </div>
             </div>
-             <div style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px; font-weight:bold;">{qtd_equip} equipamento(s) locado(s)</div>
+             <div style="font-size: 0.9rem;">{qtd_equip} equipamento(s) locado(s)</div>
         </div>""", unsafe_allow_html=True)
+        st.markdown("")
 
         for index, row in df_l.iterrows():
             with st.container(border=False):
@@ -857,7 +859,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 </div>
                 """
                 st.markdown(html_loc, unsafe_allow_html=True)
-                
+            
                 c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
                 
                 with c_btn1:
