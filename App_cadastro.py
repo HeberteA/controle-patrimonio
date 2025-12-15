@@ -792,7 +792,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="display:none;" id="dl_link_{row[ID_COL]}">Download</a><script>document.getElementById("dl_link_{row[ID_COL]}").click();</script>'
                                 st.markdown(f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold; display:block; text-align:center;">⬇️ Baixar PDF</a>', unsafe_allow_html=True)
 
-                    st.markdown("---")
+                    st.divider()
     with tab_vis_locacao:
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -880,7 +880,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         st.cache_data.clear()
                         st.rerun()
                 
-                st.markdown("---")
+                st.divider()
                 
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
