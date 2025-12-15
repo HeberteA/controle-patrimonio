@@ -503,165 +503,245 @@ def pagina_dashboard(dados_da_obra, df_movimentacoes):
             st.info("Não há dados de status para analisar.")
 
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
-    st.header("Cadastrar Novo Item", divider='rainbow')
-    obra_para_cadastro = None
-    if is_admin:
-        obra_para_cadastro = st.selectbox("Selecione a Obra para o novo item", options=lista_obras_app, index=None, placeholder="Escolha a obra...")
-    else:
-        obra_para_cadastro = st.session_state.selected_obra
-
-    if not obra_para_cadastro:
-        st.info("Selecione uma obra para iniciar o cadastro.")
-        return
-
-    with st.form("cadastro_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            nome_produto = st.text_input("Nome do Produto")
-            num_tombamento_manual = st.text_input("N° de Tombamento (deixe em branco para gerar)")
-            num_nota_fiscal = st.text_input("N° da Nota Fiscal")
-            valor_produto = st.number_input("Valor (R$)", min_value=0.0, step=100.00, format="%.2f")
-            status_selecionado = st.selectbox("Status do Item", options=lista_status, index=0)
-        with col2:
-            especificacoes = st.text_area("Especificações")
-            observacoes = st.text_area("Observações")
-            local_uso = st.text_input("Local de Uso")
-            responsavel = st.text_input("Responsável")
+    st.header("Novo Cadastro", divider='rainbow')
     
-        uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
-        submitted = st.form_submit_button("Cadastrar Item", type="primary", use_container_width=True)
+    tab_patrimonio, tab_locacao = st.tabs(["Patrimônio", "Locação"])
 
-        if submitted:
-            if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
-                st.error("⚠️ Preencha todos os campos obrigatórios (*)")
-                return
+    with tab_patrimonio:
+        obra_para_cadastro = None
+        if is_admin:
+            obra_para_cadastro = st.selectbox("Obra de Destino (Patrimônio)", options=lista_obras_app, index=None, key="patrimonio_obra_select")
+        else:
+            obra_para_cadastro = st.session_state.selected_obra
 
-            input_limpo = num_tombamento_manual.strip() if num_tombamento_manual else ""
-            num_tombamento_final = ""
-            is_valid = False
-
-            dados_obra_atual = existing_data[existing_data[OBRA_COL] == obra_para_cadastro]
-
-            if input_limpo:
-                coluna_limpa = dados_obra_atual[TOMBAMENTO_COL].astype(str).str.strip()
-                if input_limpo in coluna_limpa.values:
-                    st.error(f"Erro: O N° de Tombamento '{input_limpo}' já existe para esta obra.")
-                else:
-                    num_tombamento_final = input_limpo
-                    is_valid = True
-            else:
-                num_tombamento_final = gerar_numero_tombamento_sequencial(existing_data, obra_para_cadastro)
-                is_valid = True
-
-            if is_valid:
-                link_nota_fiscal = ""
-                if uploaded_pdf:
-                    file_name = f"NF_{num_tombamento_final}_{obra_para_cadastro.replace(' ', '_')}.pdf"
-                    link_nota_fiscal = upload_to_supabase_storage(uploaded_pdf.getvalue(), file_name)
-                    if not link_nota_fiscal:
-                        st.error("Falha no upload da Nota Fiscal. O item não foi cadastrado.")
-                        return
-
-                novo_item_dict = {
-                    OBRA_COL: obra_para_cadastro,
-                    TOMBAMENTO_COL: num_tombamento_final,
-                    NOME_COL: nome_produto,
-                    ESPEC_COL: especificacoes,
-                    OBS_COL: observacoes,
-                    LOCAL_COL: local_uso,
-                    RESPONSAVEL_COL: responsavel,
-                    NF_NUM_COL: num_nota_fiscal,
-                    NF_LINK_COL: link_nota_fiscal,
-                    VALOR_COL: valor_produto,
-                    STATUS_COL: status_selecionado
-                }
-                
-                try:
-                    conn.table("patrimonio").insert(novo_item_dict).execute()
-                    st.success(f"Item '{nome_produto}' cadastrado para a obra {obra_para_cadastro}! Tombamento: {num_tombamento_final}")
-                    st.cache_data.clear() 
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao salvar no Supabase: {e}")
-
-def pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status):
-    st.header("Itens Cadastrados", divider='rainbow')
-    
-    if dados_da_obra.empty:
-        st.info("Nenhum item cadastrado para a obra selecionada ainda.")
-        return
-
-    dados_filtrados = dados_da_obra.copy()
-    
-    with st.expander("Filtros", expanded=True):
-        col_f1, col_f2, col_f3 = st.columns(3)
-        
-        with col_f1:
-            status_unicos = ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique()))
-            filtro_status = st.selectbox("Filtrar por Status", status_unicos, key="filter_status")
-            if filtro_status != "Todos":
-                dados_filtrados = dados_filtrados[dados_filtrados[STATUS_COL] == filtro_status]
-        
-        with col_f2:
-            search_term = st.text_input("Buscar por Nome, Tombamento ou Responsável", key="filter_search")
-            if search_term:
-                dados_filtrados = dados_filtrados[
-                    dados_filtrados[NOME_COL].str.contains(search_term, case=False, na=False) |
-                    dados_filtrados[TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False) |
-                    dados_filtrados[RESPONSAVEL_COL].str.contains(search_term, case=False, na=False)
-                ]
-        
-        with col_f3:
-            min_val = float(dados_da_obra[VALOR_COL].min()) if not dados_da_obra.empty else 0.0
-            max_val = float(dados_da_obra[VALOR_COL].max()) if not dados_da_obra.empty else 0.0
+        if not obra_para_cadastro:
+            st.info("Selecione uma obra para iniciar o cadastro.")
+        else:
+            with st.form("cadastro_patrimonio_form", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    nome_produto = st.text_input("Nome do Produto")
+                    num_tombamento_manual = st.text_input("N° de Tombamento (Opcional - Automático se vazio)")
+                    num_nota_fiscal = st.text_input("N° da Nota Fiscal")
+                    valor_produto = st.number_input("Valor (R$)", min_value=0.0, step=100.00, format="%.2f")
+                    status_selecionado = st.selectbox("Status", options=lista_status, index=0)
+                with col2:
+                    especificacoes = st.text_area("Especificações")
+                    observacoes = st.text_area("Observações")
+                    local_uso = st.text_input("Local de Uso")
+                    responsavel = st.text_input("Responsável")
             
-            if min_val < max_val: 
-                filtro_valor = st.slider("Filtrar por Valor (R$)", 
-                                         min_value=min_val, 
-                                         max_value=max_val, 
-                                         value=(min_val, max_val),
-                                         key="filter_valor")
-                dados_filtrados = dados_filtrados[
-                    (dados_filtrados[VALOR_COL] >= filtro_valor[0]) &
-                    (dados_filtrados[VALOR_COL] <= filtro_valor[1])
+                uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
+                submitted = st.form_submit_button("Cadastrar Patrimônio", type="primary", use_container_width=True)
+
+                if submitted:
+                    if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
+                        st.error("⚠️ Preencha os campos obrigatórios: Nome, NF, Local e Responsável.")
+                    else:
+                        link_nota_fiscal = ""
+                        
+                        num_final_envio = num_tombamento_manual.strip() if num_tombamento_manual else None
+
+                        if uploaded_pdf:
+                            file_name = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
+                            link_nota_fiscal = upload_to_supabase_storage(uploaded_pdf.getvalue(), file_name)
+
+                        novo_item_dict = {
+                            OBRA_COL: obra_para_cadastro,
+                            TOMBAMENTO_COL: num_final_envio, 
+                            NOME_COL: nome_produto,
+                            ESPEC_COL: especificacoes,
+                            OBS_COL: observacoes,
+                            LOCAL_COL: local_uso,
+                            RESPONSAVEL_COL: responsavel,
+                            NF_NUM_COL: num_nota_fiscal,
+                            NF_LINK_COL: link_nota_fiscal,
+                            VALOR_COL: valor_produto,
+                            STATUS_COL: status_selecionado
+                        }
+                        
+                        try:
+                            conn.table("patrimonio").insert(novo_item_dict).execute()
+                            st.success(f"Patrimônio '{nome_produto}' cadastrado com sucesso!")
+                            st.cache_data.clear() 
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
+
+    with tab_locacao:
+        st.markdown("### Registrar Nova Locação")
+        
+        with st.form("cadastro_locacao_form", clear_on_submit=True):
+            l1_c1, l1_c2, l1_c3, l1_c4 = st.columns([2, 2, 2, 1])
+            with l1_c1:
+                loc_equipamento = st.text_input("Equipamento")
+            with l1_c2:
+                if is_admin:
+                    loc_obra = st.selectbox("Obra Destino", options=lista_obras_app, key="loc_obra_select")
+                else:
+                    loc_obra = st.text_input("Obra Destino", value=st.session_state.selected_obra, disabled=True)
+                    if not loc_obra: loc_obra = st.session_state.selected_obra
+            with l1_c3:
+                loc_responsavel = st.text_input("Responsável (Rastreio)")
+            with l1_c4:
+                loc_qtd = st.number_input("Quantidade", min_value=1, value=1, step=1)
+
+            l2_c1, l2_c2, l2_c3, l2_c4 = st.columns([1, 1.5, 1.5, 2])
+            with l2_c1:
+                loc_unidade = st.text_input("Unidade (Ex: Mês)")
+            with l2_c2:
+                loc_valor = st.number_input("Valor Unitário/Mensal (R$)", min_value=0.0, format="%.2f")
+            with l2_c3:
+                loc_contrato = st.text_input("Contrato/PC (Sienge)")
+            with l2_c4:
+                loc_status = st.selectbox("Status Inicial", ["Em Transporte (Padrão)", "Ativo", "Devolvido"])
+
+            l3_c1, l3_c2 = st.columns(2)
+            with l3_c1:
+                loc_inicio = st.date_input("Data de Início da Cobrança", value=None)
+            with l3_c2:
+                loc_fim = st.date_input("Previsão Fim da Locação", value=None)
+
+            st.write("")
+            submitted_loc = st.form_submit_button("Adicionar Locação", type="primary", use_container_width=True)
+
+            if submitted_loc:
+                if not (loc_equipamento and loc_obra):
+                    st.error("Campos 'Equipamento' e 'Obra' são obrigatórios.")
+                else:
+                    nova_locacao = {
+                        "equipamento": loc_equipamento,
+                        "obra_destino": loc_obra if is_admin else st.session_state.selected_obra,
+                        "responsavel": loc_responsavel,
+                        "quantidade": loc_qtd,
+                        "unidade": loc_unidade,
+                        "valor_mensal": loc_valor,
+                        "contrato_sienge": loc_contrato,
+                        "status": loc_status,
+                        "data_inicio": loc_inicio.isoformat() if loc_inicio else None,
+                        "data_previsao_fim": loc_fim.isoformat() if loc_fim else None
+                    }
+                    try:
+                        conn.table("locacoes").insert(nova_locacao).execute()
+                        st.success(f"Locação de '{loc_equipamento}' registrada!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao salvar locação: {e}")
+                        
+def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status):
+    st.header("Consulta e Relatórios", divider='rainbow')
+    
+    tab_vis_patrimonio, tab_vis_locacao = st.tabs(["Patrimônio", "Locações Ativas"])
+
+    with tab_vis_patrimonio:
+        if dados_patrimonio.empty:
+            st.info("Nenhum patrimônio cadastrado.")
+        else:
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                search_term = st.text_input("Buscar Patrimônio", key="search_patrimonio")
+            
+            dados_filt = dados_patrimonio.copy()
+            if search_term:
+                dados_filt = dados_filt[
+                    dados_filt[NOME_COL].str.contains(search_term, case=False, na=False) |
+                    dados_filt[TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False)
                 ]
-    
-    st.write("---")
-    if not dados_filtrados.empty:
-        st.dataframe(dados_filtrados, use_container_width=True, hide_index=True, column_config={
-            ID_COL: None, 
-            NF_LINK_COL: st.column_config.LinkColumn("Anexo PDF", display_text="🔗 Abrir Link")
-        })
-    else:
-        st.info("Nenhum item encontrado com os filtros aplicados.")
+            
+            st.dataframe(dados_filt, use_container_width=True, hide_index=True, column_config={
+                ID_COL: None,
+                NF_LINK_COL: st.column_config.LinkColumn("PDF", display_text="Abrir"),
+                VALOR_COL: st.column_config.NumberColumn("Valor", format="R$ %.2f")
+            })
+            
+            st.write("---")
+            st.subheader("Gerar Etiqueta QR Code")
+            patrimonio_opts = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for _, row in dados_filt.iterrows()]
+            selecao_qr = st.selectbox("Selecione o item para imprimir etiqueta", options=patrimonio_opts, index=None)
+            
+            if selecao_qr:
+                tomb_sel = selecao_qr.split(" - ")[0]
+                row_sel = dados_filt[dados_filt[TOMBAMENTO_COL].astype(str) == tomb_sel].iloc[0]
+                
+                pdf_bytes = gerar_ficha_qr_code(row_sel)
+                if pdf_bytes:
+                    st.download_button(
+                        label="Baixar Ficha",
+                        data=pdf_bytes,
+                        file_name=f"Etiqueta_{tomb_sel}.pdf",
+                        mime="application/pdf",
+                        type="secondary"
+                    )
 
-    st.write("---") 
-    st.subheader("Exportar Visão Filtrada")
-    
-    excel_data = to_excel(dados_filtrados)
-    pdf_data = to_pdf(dados_filtrados, "Visão Filtrada") 
+    with tab_vis_locacao:
+        if dados_locacoes.empty:
+            st.info("Nenhuma locação registrada.")
+            return
 
-    col_ex1, col_ex2 = st.columns(2)
-    with col_ex1:
-        st.download_button(
-            label="📥 Baixar Relatório (Excel)",
-            data=excel_data,
-            file_name=f"relatorio_patrimonio_filtrado.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-            disabled=dados_filtrados.empty 
-        )
-    with col_ex2:
-        st.download_button(
-            label="📄 Baixar Relatório (PDF)",
-            data=pdf_data,
-            file_name=f"relatorio_patrimonio_filtrado.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            disabled=dados_filtrados.empty 
-        )
+        col_lf1, col_lf2 = st.columns([1, 2])
+        with col_lf1:
+            obras_loc_disp = sorted(list(dados_locacoes["obra_destino"].unique()))
+            filtro_obra_loc = st.selectbox("Filtrar por Obra", ["Todas"] + obras_loc_disp)
+        with col_lf2:
+            busca_loc = st.text_input("Busca Geral (Equipamento, Contrato...)", key="search_loc")
 
+        df_l = dados_locacoes.copy()
+        if filtro_obra_loc != "Todas":
+            df_l = df_l[df_l["obra_destino"] == filtro_obra_loc]
+        
+        if busca_loc:
+            df_l = df_l[
+                df_l["equipamento"].str.contains(busca_loc, case=False, na=False) |
+                df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)
+            ]
 
+        total_mensal = df_l["valor_mensal"].sum()
+        qtd_equip = df_l.shape[0]
+        
+        st.markdown(f"""
+        <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
+            <h4 style="margin:0; color: #E37026;">Resumo: {filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <span><b>{qtd_equip}</b> equipamento(s) locado(s)</span>
+                <span style="font-size: 1.2em;"><b>VALOR TOTAL MENSAL ESTIMADO: R$ {total_mensal:,.2f}</b></span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        for index, row in df_l.iterrows():
+            with st.container():
+                st.markdown(f"""
+                <div style="background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <h3 style="margin:0; color: white;">{row['equipamento']}</h3>
+                        <span style="background-color: #333; padding: 2px 10px; border-radius: 4px; font-size: 0.8em;">{row['status']}</span>
+                    </div>
+                    <p style="color: #888; margin: 0 0 10px 0;">{row['obra_destino']} | Qtd: {row['quantidade']} ({row['unidade']})</p>
+                    <div style="display:flex; justify-content:space-between; color: #CCC; font-size: 0.9em; flex-wrap: wrap;">
+                        <div style="margin-right: 20px;"><b>Responsável:</b> {row['responsavel']}</div>
+                        <div style="margin-right: 20px;"><b>Valor/Unid:</b> R$ {row['valor_mensal']:,.2f}</div>
+                        <div style="margin-right: 20px;"><b>Início:</b> {pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'}</div>
+                        <div><b>Previsão Fim:</b> {pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                c_btn1, c_btn2, c_spacer = st.columns([1, 1, 4])
+                with c_btn1:
+                    if st.button("Atualizar Status", key=f"btn_upd_{row['id']}"):
+                        novo_st = "Devolvido" if row['status'] != "Devolvido" else "Ativo"
+                        conn.table("locacoes").update({"status": novo_st}).eq("id", row['id']).execute()
+                        st.cache_data.clear()
+                        st.rerun()
+                with c_btn2:
+                    if st.button("Excluir", key=f"btn_del_{row['id']}", type="primary"):
+                        conn.table("locacoes").delete().eq("id", row['id']).execute()
+                        st.cache_data.clear()
+                        st.rerun()
+                
+                st.markdown("---")
+                
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
 
@@ -848,7 +928,7 @@ def app_principal():
     is_admin = st.session_state.is_admin
     obra_selecionada_sidebar = None 
 
-    lista_status, lista_obras_app, existing_data_full, df_movimentacoes = carregar_dados_app()
+    lista_status, lista_obras_app, existing_data_full, df_movimentacoes, df_locacoes = carregar_dados_app()
     
     with st.sidebar:
         st.image("Lavie.png", use_container_width=True)
@@ -858,7 +938,7 @@ def app_principal():
         else:
             st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-        menu_options = ["Cadastrar Item", "Itens Cadastrados", "Gerenciar Itens", "Dashboard"]
+        menu_options = ["Cadastrar Item", "Consulta Geral", "Gerenciar Itens", "Dashboard"]
         icons = ["plus-circle-fill", "card-list", "pencil-square", "bar-chart-fill"]
         
         selected_page = option_menu(
@@ -884,70 +964,36 @@ def app_principal():
     
     if is_admin:
         nome_da_obra_para_relatorio = obra_selecionada_sidebar
-        
         if obra_selecionada_sidebar == "Todas":
-            dados_da_obra = existing_data_full
+            dados_patrimonio = existing_data_full
+            dados_locacoes_filt = df_locacoes
         else:
-            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+            dados_patrimonio = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
+            dados_locacoes_filt = df_locacoes[df_locacoes["obra_destino"] == obra_selecionada_sidebar].copy()
             
     else: 
         obra_logada = st.session_state.selected_obra
         nome_da_obra_para_relatorio = obra_logada
-        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
+        dados_patrimonio = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
+        dados_locacoes_filt = df_locacoes[df_locacoes["obra_destino"] == obra_logada].copy()
 
     with st.sidebar:
         st.write("---")
-        st.header("Relatórios da Visão")
-        st.info(f"Gerando para: **{nome_da_obra_para_relatorio}**")
-        
-        excel_data = to_excel(dados_da_obra)
-        st.download_button(
-            label="📥 Baixar Relatório (Excel)",
-            data=excel_data,
-            file_name=f"relatorio_patrimonio_{nome_da_obra_para_relatorio.replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-
-        pdf_data = to_pdf(dados_da_obra, nome_da_obra_para_relatorio)
-        st.download_button(
-            label="📄 Baixar Relatório (PDF)",
-            data=pdf_data,
-            file_name=f"relatorio_patrimonio_{nome_da_obra_para_relatorio.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-        st.write("---")
-
+        st.header("Exportação Rápida")
         if st.button("Sair / Trocar Obra", type="primary", use_container_width=True):
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.cache_data.clear()
             st.rerun()
-    
-    if is_admin:
-        st.subheader(f"Visão da Obra: **{obra_selecionada_sidebar}**")
-        if obra_selecionada_sidebar == "Todas":
-            dados_da_obra = existing_data_full
-        else:
-            dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_selecionada_sidebar].copy()
-            
-    else:
-        obra_logada = st.session_state.selected_obra
-        st.subheader(f"Obra: **{obra_logada}**")
-        dados_da_obra = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
 
     if selected_page == "Dashboard":
-        pagina_dashboard(dados_da_obra, df_movimentacoes)
+        pagina_dashboard(dados_patrimonio, df_movimentacoes)
+        
     elif selected_page == "Cadastrar Item":
-        pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data_full)
-    elif selected_page == "Itens Cadastrados":
-        pagina_itens_cadastrados(is_admin, dados_da_obra, lista_status)
+        pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, dados_patrimonio)
+        
+    elif selected_page == "Consulta Geral":
+        pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes_filt, lista_status)
+        
     elif selected_page == "Gerenciar Itens":
-        pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status)
-
-if not st.session_state.logged_in:
-    tela_de_login()
-else:
-    app_principal()
+        pagina_gerenciar_itens(dados_patrimonio, existing_data_full, df_movimentacoes, lista_status)
