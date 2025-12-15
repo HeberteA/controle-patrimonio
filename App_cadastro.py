@@ -645,6 +645,42 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         
 def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status):
     st.header("Consulta e Relatórios", divider='rainbow')
+    st.markdown("""
+    <style>
+    /* Força o botão "secondary" a ser AZUL (Estilo 'Atualizar Status') */
+    button[kind="secondary"] {
+        background-color: #0d6efd !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 500 !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: #0b5ed7 !important;
+        color: white !important;
+    }
+
+    /* Força o botão "primary" a ser VERMELHO (Estilo 'Excluir') */
+    button[kind="primary"] {
+        background-color: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 500 !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #bb2d3b !important;
+    }
+    
+    /* Ajuste fino para os cards parecerem unificados */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #1E1E1E; /* Cor de fundo do card */
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     tab_vis_patrimonio, tab_vis_locacao = st.tabs(["Patrimônio", "Locações Ativas"])
 
@@ -680,7 +716,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             st.markdown("")
 
             for index, row in dados_filt.iterrows():
-                with st.container():
+                with st.container(border=False):
                     st_txt = str(row[STATUS_COL]).strip().upper()
                     
                     if st_txt == "ATIVO":
@@ -691,62 +727,48 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         cor_status = "#dc3545" 
                     bg_status = f"{cor_status}22" 
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
+                    nome_safe = str(row[NOME_COL]).replace('"', '&quot;')
+                    espec_safe = str(row[ESPEC_COL])[:100] + "..."
 
-                    st.markdown(f"""
-                    <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
+                    html_content = f"""
+                    <div style="margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
-                                <h3 style="margin:0; color: white; font-size: 1.3em;">{row[NOME_COL]}</h3>
-                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em; margin-top: 4px;">
-                                    TOMBAMENTO: {row[TOMBAMENTO_COL]}
-                                </div>
+                                <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
+                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[TOMBAMENTO_COL]}</div>
                             </div>
-                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 6px 12px; border-radius: 20px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; white-space: nowrap;">
-                                {str(row[STATUS_COL]).upper()}
-                            </span>
+                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
                         </div>
-                        <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
-                            <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">OBRA</b>
-                                {row[OBRA_COL]}
-                            </div>
-                            <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">LOCAL</b>
-                                {row[LOCAL_COL]}
-                            </div>
-                            <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
-                                {row[RESPONSAVEL_COL]}
-                            </div>
-                            <div style="min-width: 100px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
-                                <span style="color: #35BE53; font-weight: bold;">{valor_fmt}</span>
-                            </div>
+                        <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
+                            <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[OBRA_COL]}</div>
+                            <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[LOCAL_COL]}</div>
+                            <div style="min-width: 120px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[RESPONSAVEL_COL]}</div>
+                            <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_fmt}</span></div>
                         </div>
-                        <div style="margin-top: 15px; background-color: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; font-size: 0.85em; color: #aaa; font-style: italic;">
-                            {str(row[ESPEC_COL])[:150]}{"..." if len(str(row[ESPEC_COL])) > 150 else ""}
+                        <div style="margin-top: 10px; font-size: 0.85em; color: #888; font-style: italic;">
+                            {espec_safe}
                         </div>
+                        <hr style="border-top: 1px solid #333; margin: 15px 0 10px 0;">
                     </div>
-                    """, unsafe_allow_html=True)
+                    """
+                    st.markdown(html_content, unsafe_allow_html=True)
                     
-                    c_b1, c_b2, c_void = st.columns([1, 1, 3])
+                    c_vazio, c_btn_nf, c_btn_qr = st.columns([4, 1.5, 1.5])
                     
-                    with c_b1:
+                    with c_btn_nf:
                         if row[NF_LINK_COL]:
-                            st.link_button("Ver Nota Fiscal", row[NF_LINK_COL])
+                            st.link_button("Nota Fiscal", row[NF_LINK_COL], type="secondary", use_container_width=True)
                         else:
-                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}")
+                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", use_container_width=True)
 
-                    with c_b2:
-                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}"):
+                    with c_btn_qr:F
+                        if st.button("Etiqueta", key=f"btn_qr_{row[ID_COL]}", type="secondary", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
                             if pdf_bytes:
                                 b64 = base64.b64encode(pdf_bytes).decode()
-                                href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold;">⬇️ Clique para Salvar PDF</a>'
-                                st.markdown(href, unsafe_allow_html=True)
+                                href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="display:none;" id="dl_link_{row[ID_COL]}">Download</a><script>document.getElementById("dl_link_{row[ID_COL]}").click();</script>'
+                                st.markdown(f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold; display:block; text-align:center;">⬇️ Baixar PDF</a>', unsafe_allow_html=True)
 
-                st.write("") 
-                
     with tab_vis_locacao:
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -757,82 +779,75 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             obras_loc_disp = sorted(list(dados_locacoes["obra_destino"].unique()))
             filtro_obra_loc = st.selectbox("Filtrar por Obra", ["Todas"] + obras_loc_disp)
         with col_lf2:
-            busca_loc = st.text_input("Busca Geral (Equipamento, Contrato...)", key="search_loc")
+            busca_loc = st.text_input("Busca Geral", key="search_loc", placeholder="Equipamento, contrato...")
 
         df_l = dados_locacoes.copy()
         if filtro_obra_loc != "Todas":
             df_l = df_l[df_l["obra_destino"] == filtro_obra_loc]
-        
         if busca_loc:
-            df_l = df_l[
-                df_l["equipamento"].str.contains(busca_loc, case=False, na=False) |
-                df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)
-            ]
+            df_l = df_l[df_l["equipamento"].str.contains(busca_loc, case=False, na=False) | df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)]
 
         total_mensal = df_l["valor_mensal"].sum()
         qtd_equip = df_l.shape[0]
         
         st.markdown(f"""
         <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
-            <h4 style="margin:0; color: #E37026;">Resumo Locações: {filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                <span><b>{qtd_equip}</b> contratos ativos</span>
-                <span style="font-size: 1.2em;"><b>MENSAL ESTIMADO: R$ {total_mensal:,.2f}</b></span>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
+                <div style="text-align:right;">
+                    <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL MENSAL ESTIMADO</div>
+                    <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+             <div style="font-size: 0.9em; color: #aaa; margin-top:5px;">{qtd_equip} equipamento(s) locado(s)</div>
+        </div>""", unsafe_allow_html=True)
 
         for index, row in df_l.iterrows():
-            with st.container():
+            with st.container(border=False):
                 d_inicio = pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'
                 d_fim = pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'
                 valor_loc_fmt = f"R$ {row['valor_mensal']:,.2f}"
+                equip_safe = str(row['equipamento']).replace('"', '&quot;')
                 
-                st.markdown(f"""
-                <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
+                st_loc = str(row['status'])
+                cor_loc = "#dc3545" 
+                if "Ativo" in st_loc or "Transporte" in st_loc: cor_loc = "#0d6efd"
+                bg_loc = f"{cor_loc}22"
+
+                html_loc = f"""
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
                         <div>
-                            <h3 style="margin:0; color: white; font-size: 1.3em;">{row['equipamento']}</h3>
-                            <span style="color: #888; font-size: 0.9em;">Contrato: {row['contrato_sienge']}</span>
+                            <h3 style="margin:0; color: white; font-size: 1.3em;">{equip_safe}</h3>
+                            <span style="color: #888; font-size: 0.9em;">{row['contrato_sienge']}</span>
                         </div>
-                        <span style="background-color: #333; color: #eee; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; border: 1px solid #555;">
-                            {row['status']}
-                        </span>
+                        <span style="background-color: {bg_loc}; color: {cor_loc}; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; border: 1px solid {cor_loc};">{st_loc}</span>
                     </div>
-                    <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
-                        <div style="min-width: 140px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">OBRA DESTINO</b>
-                            {row['obra_destino']}
-                        </div>
-                         <div style="min-width: 100px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">QTD</b>
-                            {row['quantidade']} ({row['unidade']})
-                        </div>
-                        <div style="min-width: 140px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
-                            {row['responsavel']}
-                        </div>
-                        <div style="min-width: 100px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
-                            <span style="color: #35BE53; font-weight: bold;">{valor_loc_fmt}</span>
-                        </div>
+                    <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
+                        <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
+                        <div style="min-width: 80px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
+                        <div style="min-width: 140px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row['responsavel']}</div>
+                        <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_loc_fmt}</span></div>
                     </div>
-                    <div style="margin-top: 10px; background-color: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
-                        <span><b>Início:</b> {d_inicio}</span>
-                        <span><b>Previsão Fim:</b> {d_fim}</span>
+                    <div style="margin-top: 10px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
+                        <span>Início: {d_inicio}</span><span>Prev. Fim: {d_fim}</span>
                     </div>
+                    <hr style="border-top: 1px solid #333; margin: 15px 0 10px 0;">
                 </div>
-                """, unsafe_allow_html=True)
+                """
+                st.markdown(html_loc, unsafe_allow_html=True)
                 
-                c_btn1, c_btn2, c_spacer = st.columns([1, 1, 4])
+                c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
+                
                 with c_btn1:
-                    if st.button("Atualizar Status", key=f"btn_upd_{row['id']}"):
+                    if st.button("Atualizar Status", key=f"btn_upd_{row['id']}", type="secondary", use_container_width=True):
                         novo_st = "Devolvido" if row['status'] != "Devolvido" else "Ativo"
                         conn.table("locacoes").update({"status": novo_st}).eq("id", row['id']).execute()
                         st.cache_data.clear()
                         st.rerun()
+                
                 with c_btn2:
-                    if st.button("Excluir", key=f"btn_del_{row['id']}", type="primary"):
+                    if st.button("Excluir Registro", key=f"btn_del_{row['id']}", type="primary", use_container_width=True):
                         conn.table("locacoes").delete().eq("id", row['id']).execute()
                         st.cache_data.clear()
                         st.rerun()
