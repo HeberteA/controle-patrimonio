@@ -608,7 +608,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             with l2_c3:
                 loc_contrato = st.text_input("Contrato/PC (Sienge)")
             with l2_c4:
-                loc_status = st.selectbox("Status Inicial", ["Em Transporte", "Ativo", "Devolvido"])
+                loc_status = st.selectbox("Status Inicial", [ "Ativo", "Manutenção", "Devolvido"])
 
             l3_c1, l3_c2 = st.columns(2)
             with l3_c1:
