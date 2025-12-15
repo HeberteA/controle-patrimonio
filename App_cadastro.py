@@ -658,18 +658,10 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         background-color: transparent !important;
         color: white !important;
     }
-    button[kind="primary"] {
-        background-color: #dc3545 !important;
-        color: white !important;
-        border: none !important;
-        font-weight: 500 !important;
-    }
-    button[kind="primary"]:hover {
-        background-color: #E37026 !important;
-    }
+
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #E37026; 
-        border: 1px solid #E37026;
+        background-color: #1E1E1E; /* Cor de fundo do card */
+        border: 1px solid #333;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 15px;
