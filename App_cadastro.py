@@ -752,6 +752,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
                     nome_safe = str(row[NOME_COL]).replace('"', '&quot;')
                     espec_safe = str(row[ESPEC_COL])[:100] + "..."
+                    st.header("", divider='rainbow')
 
                     html_content = f"""
                     <div style="margin-bottom: 10px;">
@@ -838,6 +839,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 cor_loc = "#dc3545" 
                 if "Ativo" in st_loc or "Manutenção" in st_loc: cor_loc = "#0d6efd"
                 bg_loc = f"{cor_loc}22"
+                st.header("", divider='rainbow')
 
                 html_loc = f"""
                 <div style="margin-bottom: 10px;">
@@ -880,7 +882,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         st.cache_data.clear()
                         st.rerun()
                 
-                st.header("", divider='rainbow')
+    
                 
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
     st.header("Gerenciar Itens Cadastrados", divider='rainbow')
