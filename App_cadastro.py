@@ -303,7 +303,7 @@ def gerar_ficha_qr_code(row_series):
         return None
 
 @st.dialog("Atualizar Status")
-def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
+def modal_atualizar_status(nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
     opcoes_status = ["Ativa (Em Uso)", "Disponível", "Em Manutenção", "Descartado"]
     
