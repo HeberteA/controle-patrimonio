@@ -677,7 +677,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         st.error(f"Erro ao salvar locação: {e}")
                         
 def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status):
-    st.header("Consulta e Relatórios", divider='#E37026')
+    st.header("Consulta e Relatórios", divider="orange")
     st.markdown("""
     <style>
     /* Força o botão "secondary" a ser AZUL (Estilo 'Atualizar Status') */
@@ -752,7 +752,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
                     nome_safe = str(row[NOME_COL]).replace('"', '&quot;')
                     espec_safe = str(row[ESPEC_COL])[:100] + "..."
-                    st.header("", divider='#E37026')
+                    st.header("", divider="orange")
 
                     html_content = f"""
                     <div style="margin-bottom: 10px;">
@@ -842,7 +842,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 else:
                     cor_loc = "#dc3545" 
                 bg_loc = f"{cor_loc}22"
-                st.header("", divider='#E37026')
+                st.header("", divider="orange")
 
                 html_loc = f"""
                 <div style="margin-bottom: 10px;">
