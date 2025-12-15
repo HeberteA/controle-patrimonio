@@ -305,7 +305,7 @@ def gerar_ficha_qr_code(row_series):
 @st.dialog("Atualizar Status")
 def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
-    opcoes_status = ["Ativa", "Manutenção", "Devolvido"]
+    opcoes_status = ["ATIVO", "MANUNTENÇÃO", "DEVOLVIDO"]
     
     try:
         index_atual = opcoes_status.index(status_atual)
@@ -641,7 +641,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             with l2_c3:
                 loc_contrato = st.text_input("Contrato/PC (Sienge)")
             with l2_c4:
-                loc_status = st.selectbox("Status Inicial", [ "Ativo", "Manutenção", "Devolvido"])
+                loc_status = st.selectbox("Status Inicial", [ "ATIVO", "MANUTENÇÃO", "DEVOLVIDO"])
 
             l3_c1, l3_c2 = st.columns(2)
             with l3_c1:
@@ -836,7 +836,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 
                 st_loc = str(row['status'])
                 cor_loc = "#dc3545" 
-                if "Ativo" in st_loc or "Manutenção" in st_loc: cor_loc = "#0d6efd"
+                if "ATIVO" in st_loc or "MANUTENÇÃO" in st_loc: cor_loc = "#0d6efd"
                 bg_loc = f"{cor_loc}22"
                 st.header("", divider='rainbow')
 
