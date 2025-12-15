@@ -835,8 +835,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 equip_safe = str(row['equipamento']).replace('"', '&quot;')
                 
                 st_loc = str(row['status'])
-                cor_loc = "#dc3545" 
-                if "ATIVO" in st_loc or "MANUTENÇÃO" in st_loc: cor_loc = "#0d6efd"
+                if st_loc == "ATIVO":
+                    cor_loc = "#35BE53" 
+                elif st_loc in ["MANUTENÇÃO"]:
+                    cor_loc = "#ffc107" 
+                else:
+                    cor_loc = "#dc3545" 
                 bg_loc = f"{cor_loc}22"
                 st.header("", divider='rainbow')
 
