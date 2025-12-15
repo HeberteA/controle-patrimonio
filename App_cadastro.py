@@ -305,7 +305,7 @@ def gerar_ficha_qr_code(row_series):
 @st.dialog("Atualizar Status")
 def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
-    opcoes_status = ["Ativa (Em Uso)", "Disponível", "Em Manutenção", "Descartado"]
+    opcoes_status = ["Ativa", "Manutenção", "Devolvido"]
     
     try:
         index_atual = opcoes_status.index(status_atual)
@@ -330,7 +330,6 @@ def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, respo
 
     with col_salvar:
         if st.button("Salvar", type="primary", use_container_width=True):
-            
             st.success("Atualizado!")
             time.sleep(0.5)
             st.rerun()
