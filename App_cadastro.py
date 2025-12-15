@@ -761,7 +761,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         else:
                             st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", use_container_width=True)
 
-                    with c_btn_qr:F
+                    with c_btn_qr:
                         if st.button("Etiqueta", key=f"btn_qr_{row[ID_COL]}", type="secondary", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
                             if pdf_bytes:
