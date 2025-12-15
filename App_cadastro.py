@@ -812,7 +812,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         qtd_equip = df_l.shape[0]
         
         st.markdown(f"""
-        <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
+        <div style="background-color: transparent; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-botton:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
                 <div style="text-align:right;">
@@ -820,7 +820,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
                 </div>
             </div>
-             <div style="font-size: 0.9em; color: #aaa; margin-top:5px;">{qtd_equip} equipamento(s) locado(s)</div>
+             <div style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;">{qtd_equip} equipamento(s) locado(s)</div>
         </div>""", unsafe_allow_html=True)
 
         for index, row in df_l.iterrows():
