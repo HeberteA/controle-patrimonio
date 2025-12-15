@@ -864,10 +864,9 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 with c_btn1:
                     if st.button("Atualizar Status", key="btn_update_1"):
                         modal_atualizar_status(
-                            id_equipamento=item['id'],
-                            nome_equipamento=item['equipamento'],
+                            nome_equipamento=item['equip_safe'],
                             status_atual=item['status'],
-                            responsavel_atual=item['resp']
+                            responsavel_atual=item['responsavel']
                         )
                             
                 
