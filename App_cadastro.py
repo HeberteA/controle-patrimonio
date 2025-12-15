@@ -649,26 +649,16 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
     <style>
     /* Força o botão "secondary" a ser AZUL (Estilo 'Atualizar Status') */
     button[kind="secondary"] {
-        background-color: #E37026 !important;
+        background-color: transparent !important;
         color: white !important;
         border: none !important;
         font-weight: 500 !important;
     }
     button[kind="secondary"]:hover {
-        background-color: #E37026 !important;
+        background-color: transparent !important;
         color: white !important;
     }
 
-    /* Força o botão "primary" a ser VERMELHO (Estilo 'Excluir') */
-    button[kind="primary"] {
-        background-color: #E37026 !important;
-        color: white !important;
-        border: none !important;
-        font-weight: 500 !important;
-    }
-    button[kind="primary"]:hover {
-        background-color: #E37026 !important;
-    }
     
     /* Ajuste fino para os cards parecerem unificados */
     div[data-testid="stVerticalBlockBorderWrapper"] {
@@ -759,10 +749,10 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         if row[NF_LINK_COL]:
                             st.link_button("Nota Fiscal", row[NF_LINK_COL], use_container_width=True)
                         else:
-                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", use_container_width=True)
+                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", type="secondary", use_container_width=True)
 
                     with c_btn_qr:
-                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}", type="secondary", use_container_width=True):
+                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
                             if pdf_bytes:
                                 b64 = base64.b64encode(pdf_bytes).decode()
