@@ -731,7 +731,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     <span><b>{qtd_patr}</b> itens encontrados</span>
                 </div>
                 <div style="text-align:right;">
-                    <span style="font-size: 0.9em; color: #ccc;">VALOR TOTAL</div>
+                    <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL</div>
                     <div style="font-size: 1.4em; font-weight:bold;"><b>R$ {total_valor_patr:,.2f}</b></div>
                 </div>
             </div>
