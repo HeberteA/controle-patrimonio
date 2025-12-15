@@ -668,8 +668,8 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             qtd_patr = dados_filt.shape[0]
             
             st.markdown(f"""
-            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <h4 style="margin:5px; color: #E37026;">Resumo Patrimonial</h4>
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1); margin-botton:20px;">
+                <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span><b>{qtd_patr}</b> itens encontrados</span>
                     <span style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
@@ -679,7 +679,14 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 
             for index, row in dados_filt.iterrows():
                 with st.container():
-                    cor_status = "#35BE53" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#dc3545"
+                    st_txt = str(row[STATUS_COL]).strip().upper()
+                    
+                    if st_txt == "ATIVO":
+                        cor_status = "#35BE53" 
+                    elif st_txt in ["MANUTENÇÃO", "EMPRÉSTIMO"]:
+                        cor_status = "#ffc107" 
+                    else:
+                        cor_status = "#dc3545" 
                     bg_status = f"{cor_status}22" 
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
 
