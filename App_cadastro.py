@@ -758,7 +758,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
                                 <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[TOMBAMENTO_COL]}</div>
                             </div>
-                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 10px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
+                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
                         </div>
                         <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
                             <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[OBRA_COL]}</div>
@@ -861,7 +861,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
                 
                 with c_btn1:
-                    if st.button("Atualizar Status", key="btn_update_1", type="primary", use_container_width=True):
+                    if st.button("Atualizar Status", key=f"btn_update_{row['id']}" , type="primary", use_container_width=True):
                         modal_atualizar_status(
                             id_equipamento=row['id'],
                             nome_equipamento=row['equipamento'],
