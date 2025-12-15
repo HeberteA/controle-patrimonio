@@ -820,7 +820,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
                 </div>
             </div>
-             <div style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;">{qtd_equip} equipamento(s) locado(s)</div>
+             <div style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px; font-weight:bold;">{qtd_equip} equipamento(s) locado(s)</div>
         </div>""", unsafe_allow_html=True)
 
         for index, row in df_l.iterrows():
