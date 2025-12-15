@@ -725,7 +725,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             qtd_patr = dados_filt.shape[0]
             
             st.markdown(f"""
-            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important;">
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; ">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                     <div style="text-align:right;">
