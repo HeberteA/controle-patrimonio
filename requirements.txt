@@ -1,7 +1,9 @@
 streamlit
-streamlit_option_menu
-st-supabase-connection
-fpdf2
-openpyxl
-plotly
 pandas
+st-supabase-connection
+streamlit-option-menu
+plotly
+openpyxl
+fpdf2       
+qrcode      
+pillow      
