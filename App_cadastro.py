@@ -668,7 +668,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             qtd_patr = dados_filt.shape[0]
             
             st.markdown(f"""
-            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9); margin-bottom: 20px;">
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
                 <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span><b>{qtd_patr}</b> itens encontrados</span>
@@ -685,7 +685,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 
                     st.markdown(f"""
                     <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                        
                         <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
                             <div>
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{row[NOME_COL]}</h3>
@@ -697,7 +696,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 {str(row[STATUS_COL]).upper()}
                             </span>
                         </div>
-                        
                         <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
                             <div style="min-width: 140px;">
                                 <b style="color: #888; font-size: 0.8em; display:block;">🏢 OBRA</b>
@@ -716,11 +714,9 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 <span style="color: #4cd137; font-weight: bold;">{valor_fmt}</span>
                             </div>
                         </div>
-
                         <div style="margin-top: 15px; background-color: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; font-size: 0.85em; color: #aaa; font-style: italic;">
                             📄 {str(row[ESPEC_COL])[:150]}{"..." if len(str(row[ESPEC_COL])) > 150 else ""}
                         </div>
-
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -785,7 +781,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 
                 st.markdown(f"""
                 <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                    
                     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
                         <div>
                             <h3 style="margin:0; color: white; font-size: 1.3em;">{row['equipamento']}</h3>
@@ -795,7 +790,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                             {row['status']}
                         </span>
                     </div>
-                    
                     <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
                         <div style="min-width: 140px;">
                             <b style="color: #888; font-size: 0.8em; display:block;">📍 OBRA DESTINO</b>
@@ -814,7 +808,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                             <span style="color: #4cd137; font-weight: bold;">{valor_loc_fmt}</span>
                         </div>
                     </div>
-
                     <div style="margin-top: 10px; background-color: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
                         <span>📅 <b>Início:</b> {d_inicio}</span>
                         <span>🏁 <b>Previsão Fim:</b> {d_fim}</span>
