@@ -303,7 +303,7 @@ def gerar_ficha_qr_code(row_series):
         return None
 
 @st.dialog("Atualizar Status")
-def modal_atualizar_status(nome_equipamento, status_atual, responsavel_atual):
+def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
     opcoes_status = ["Ativa (Em Uso)", "Disponível", "Em Manutenção", "Descartado"]
     
@@ -862,11 +862,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
                 
                 with c_btn1:
-                    if st.button("Atualizar Status", key="btn_update_1"):
+                    if st.button("Atualizar Status", key="btn_update_1", type="primary"):
                         modal_atualizar_status(
-                            nome_equipamento=item['equip_safe'],
-                            status_atual=item['status'],
-                            responsavel_atual=item['responsavel']
+                            id_equipamento=row['id'],
+                            nome_equipamento=row['equip_safe'],
+                            status_atual=row['status'],
+                            responsavel_atual=row['responsavel']
                         )
                             
                 
