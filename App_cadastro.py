@@ -737,8 +737,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             <div><b>{qtd_patr}</b> itens encontrados</div>
             </div>"""), unsafe_allow_html=True)
 
-            st.markdown("")
-
             for index, row in dados_filt.iterrows():
                 with st.container(border=False):
                     st_txt = str(row[STATUS_COL]).strip().upper()
@@ -826,7 +824,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             </div>
              <div><b>{qtd_equip}</b> equipamento(s) locado(s)</div>
         </div>"""), unsafe_allow_html=True)
-        st.markdown("")
 
         for index, row in df_l.iterrows():
             with st.container(border=False):
