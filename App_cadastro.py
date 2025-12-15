@@ -667,10 +667,9 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
     button[kind="primary"]:hover {
         background-color: #E37026 !important;
     }
-    /* Ajuste fino para os cards parecerem unificados */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #E37026; /* Cor de fundo do card */
-        border: 1px solid #333;
+        background-color: #E37026; 
+        border: 1px solid #E37026;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 15px;
