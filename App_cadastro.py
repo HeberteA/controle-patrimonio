@@ -757,7 +757,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     
                     with c_btn_nf:
                         if row[NF_LINK_COL]:
-                            st.link_button("Nota Fiscal", row[NF_LINK_COL], type="secondary", use_container_width=True)
+                            st.link_button("Nota Fiscal", row[NF_LINK_COL], use_container_width=True)
                         else:
                             st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", use_container_width=True)
 
