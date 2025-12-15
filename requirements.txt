@@ -7,4 +7,3 @@ openpyxl
 fpdf2       
 qrcode      
 pillow      
-textwrap
