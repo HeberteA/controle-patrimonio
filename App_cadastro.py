@@ -668,11 +668,11 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             qtd_patr = dados_filt.shape[0]
             
             st.markdown(f"""
-            <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9); margin-bottom: 20px;">
                 <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span><b>{qtd_patr}</b> itens encontrados</span>
-                    <span style="font-size: 1.2em;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
+                    <span style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -680,12 +680,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             for index, row in dados_filt.iterrows():
                 with st.container():
                     cor_status = "#28a745" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#dc3545"
-                    bg_status = f"{cor_status}22"
-                    
+                    bg_status = f"{cor_status}22" 
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
 
                     st.markdown(f"""
                     <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                        
                         <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
                             <div>
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{row[NOME_COL]}</h3>
@@ -694,32 +694,33 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 </div>
                             </div>
                             <span style="background-color: {bg_status}; color: {cor_status}; padding: 6px 12px; border-radius: 20px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; white-space: nowrap;">
-                                {row[STATUS_COL].upper()}
+                                {str(row[STATUS_COL]).upper()}
                             </span>
                         </div>
                         
                         <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
                             <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">OBRA</b>
+                                <b style="color: #888; font-size: 0.8em; display:block;">🏢 OBRA</b>
                                 {row[OBRA_COL]}
                             </div>
                             <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">LOCAL</b>
+                                <b style="color: #888; font-size: 0.8em; display:block;">📍 LOCAL</b>
                                 {row[LOCAL_COL]}
                             </div>
                             <div style="min-width: 140px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
+                                <b style="color: #888; font-size: 0.8em; display:block;">👤 RESPONSÁVEL</b>
                                 {row[RESPONSAVEL_COL]}
                             </div>
                             <div style="min-width: 100px;">
-                                <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
+                                <b style="color: #888; font-size: 0.8em; display:block;">💲 VALOR</b>
                                 <span style="color: #4cd137; font-weight: bold;">{valor_fmt}</span>
                             </div>
                         </div>
 
                         <div style="margin-top: 15px; background-color: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; font-size: 0.85em; color: #aaa; font-style: italic;">
-                            {str(row[ESPEC_COL])[:120]}{"..." if len(str(row[ESPEC_COL])) > 120 else ""}
+                            📄 {str(row[ESPEC_COL])[:150]}{"..." if len(str(row[ESPEC_COL])) > 150 else ""}
                         </div>
+
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -780,10 +781,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             with st.container():
                 d_inicio = pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'
                 d_fim = pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'
+                valor_loc_fmt = f"R$ {row['valor_mensal']:,.2f}"
                 
                 st.markdown(f"""
                 <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
                         <div>
                             <h3 style="margin:0; color: white; font-size: 1.3em;">{row['equipamento']}</h3>
                             <span style="color: #888; font-size: 0.9em;">Contrato: {row['contrato_sienge']}</span>
@@ -793,28 +796,28 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         </span>
                     </div>
                     
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
+                    <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
                         <div style="min-width: 140px;">
                             <b style="color: #888; font-size: 0.8em; display:block;">📍 OBRA DESTINO</b>
                             {row['obra_destino']}
                         </div>
                          <div style="min-width: 100px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">QTD</b>
+                            <b style="color: #888; font-size: 0.8em; display:block;">📦 QTD</b>
                             {row['quantidade']} ({row['unidade']})
                         </div>
                         <div style="min-width: 140px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
+                            <b style="color: #888; font-size: 0.8em; display:block;">👤 RESPONSÁVEL</b>
                             {row['responsavel']}
                         </div>
                         <div style="min-width: 100px;">
-                            <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
-                            R$ {row['valor_mensal']:,.2f}
+                            <b style="color: #888; font-size: 0.8em; display:block;">💲 VALOR</b>
+                            <span style="color: #4cd137; font-weight: bold;">{valor_loc_fmt}</span>
                         </div>
                     </div>
 
                     <div style="margin-top: 10px; background-color: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
-                        <span><b>Início:</b> {d_inicio}</span>
-                        <span><b>Previsão Fim:</b> {d_fim}</span>
+                        <span>📅 <b>Início:</b> {d_inicio}</span>
+                        <span>🏁 <b>Previsão Fim:</b> {d_fim}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
