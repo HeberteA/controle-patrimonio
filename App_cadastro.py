@@ -679,28 +679,46 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 
             for index, row in dados_filt.iterrows():
                 with st.container():
-                    cor_status = "#28a745" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#6c757d"
+                    cor_status = "#28a745" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#dc3545"
+                    bg_status = f"{cor_status}22"
                     
+                    valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
+
                     st.markdown(f"""
-                    <div style="background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px;">
-                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
                             <div>
-                                <h3 style="margin:0; color: white;">{row[NOME_COL]}</h3>
-                                <p style="color: #E37026; margin: 0; font-weight: bold;">Tombamento: {row[TOMBAMENTO_COL]}</p>
+                                <h3 style="margin:0; color: white; font-size: 1.3em;">{row[NOME_COL]}</h3>
+                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em; margin-top: 4px;">
+                                    TOMBAMENTO: {row[TOMBAMENTO_COL]}
+                                </div>
                             </div>
-                            <span style="background-color: {cor_status}33; color: {cor_status}; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; border: 1px solid {cor_status};">
-                                {row[STATUS_COL]}
+                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 6px 12px; border-radius: 20px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; white-space: nowrap;">
+                                {row[STATUS_COL].upper()}
                             </span>
                         </div>
                         
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display:flex; justify-content:space-between; flex-wrap: wrap; color: #CCC; font-size: 0.9em;">
-                            <div style="margin-right: 15px;"><b>Obra:</b> {row[OBRA_COL]}</div>
-                            <div style="margin-right: 15px;"><b>Local:</b> {row[LOCAL_COL]}</div>
-                            <div style="margin-right: 15px;"><b>Resp:</b> {row[RESPONSAVEL_COL]}</div>
-                            <div><b>Valor:</b> R$ {row[VALOR_COL]:,.2f}</div>
+                        <div style="padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
+                            <div style="min-width: 140px;">
+                                <b style="color: #888; font-size: 0.8em; display:block;">OBRA</b>
+                                {row[OBRA_COL]}
+                            </div>
+                            <div style="min-width: 140px;">
+                                <b style="color: #888; font-size: 0.8em; display:block;">LOCAL</b>
+                                {row[LOCAL_COL]}
+                            </div>
+                            <div style="min-width: 140px;">
+                                <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
+                                {row[RESPONSAVEL_COL]}
+                            </div>
+                            <div style="min-width: 100px;">
+                                <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
+                                <span style="color: #4cd137; font-weight: bold;">{valor_fmt}</span>
+                            </div>
                         </div>
-                        <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
-                            <i>{str(row[ESPEC_COL])[:100]}...</i>
+
+                        <div style="margin-top: 15px; background-color: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; font-size: 0.85em; color: #aaa; font-style: italic;">
+                            {str(row[ESPEC_COL])[:120]}{"..." if len(str(row[ESPEC_COL])) > 120 else ""}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -712,7 +730,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                             st.link_button("Ver Nota Fiscal", row[NF_LINK_COL])
                         else:
                             st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}")
-                            
+
                     with c_b2:
                         if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}"):
                             pdf_bytes = gerar_ficha_qr_code(row)
@@ -722,7 +740,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 st.markdown(href, unsafe_allow_html=True)
 
                 st.write("") 
-
+                
     with tab_vis_locacao:
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -760,18 +778,43 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 
         for index, row in df_l.iterrows():
             with st.container():
+                d_inicio = pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'
+                d_fim = pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'
+                
                 st.markdown(f"""
-                <div style="background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <h3 style="margin:0; color: white;">{row['equipamento']}</h3>
-                        <span style="background-color: #333; padding: 2px 10px; border-radius: 4px; font-size: 0.8em;">{row['status']}</span>
+                <div style="background-color: #1E1E1E; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h3 style="margin:0; color: white; font-size: 1.3em;">{row['equipamento']}</h3>
+                            <span style="color: #888; font-size: 0.9em;">Contrato: {row['contrato_sienge']}</span>
+                        </div>
+                        <span style="background-color: #333; color: #eee; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; border: 1px solid #555;">
+                            {row['status']}
+                        </span>
                     </div>
-                    <p style="color: #888; margin: 0 0 10px 0;">{row['obra_destino']} | Qtd: {row['quantidade']} ({row['unidade']})</p>
-                    <div style="display:flex; justify-content:space-between; color: #CCC; font-size: 0.9em; flex-wrap: wrap;">
-                        <div style="margin-right: 20px;"><b>Responsável:</b> {row['responsavel']}</div>
-                        <div style="margin-right: 20px;"><b>Valor/Unid:</b> R$ {row['valor_mensal']:,.2f}</div>
-                        <div style="margin-right: 20px;"><b>Início:</b> {pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'}</div>
-                        <div><b>Previsão Fim:</b> {pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'}</div>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.95em;">
+                        <div style="min-width: 140px;">
+                            <b style="color: #888; font-size: 0.8em; display:block;">📍 OBRA DESTINO</b>
+                            {row['obra_destino']}
+                        </div>
+                         <div style="min-width: 100px;">
+                            <b style="color: #888; font-size: 0.8em; display:block;">QTD</b>
+                            {row['quantidade']} ({row['unidade']})
+                        </div>
+                        <div style="min-width: 140px;">
+                            <b style="color: #888; font-size: 0.8em; display:block;">RESPONSÁVEL</b>
+                            {row['responsavel']}
+                        </div>
+                        <div style="min-width: 100px;">
+                            <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
+                            R$ {row['valor_mensal']:,.2f}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px; background-color: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
+                        <span><b>Início:</b> {d_inicio}</span>
+                        <span><b>Previsão Fim:</b> {d_fim}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
