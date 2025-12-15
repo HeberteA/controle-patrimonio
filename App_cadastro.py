@@ -997,3 +997,8 @@ def app_principal():
         
     elif selected_page == "Gerenciar Itens":
         pagina_gerenciar_itens(dados_patrimonio, existing_data_full, df_movimentacoes, lista_status)
+
+if not st.session_state.logged_in:
+    tela_de_login()
+else:
+    app_principal()
