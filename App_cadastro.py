@@ -649,25 +649,25 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
     <style>
     /* Força o botão "secondary" a ser AZUL (Estilo 'Atualizar Status') */
     button[kind="secondary"] {
-        background-color: #0d6efd !important;
+        background-color: #E37026 !important;
         color: white !important;
         border: none !important;
         font-weight: 500 !important;
     }
     button[kind="secondary"]:hover {
-        background-color: #0b5ed7 !important;
+        background-color: #E37026 !important;
         color: white !important;
     }
 
     /* Força o botão "primary" a ser VERMELHO (Estilo 'Excluir') */
     button[kind="primary"] {
-        background-color: #dc3545 !important;
+        background-color: #E37026 !important;
         color: white !important;
         border: none !important;
         font-weight: 500 !important;
     }
     button[kind="primary"]:hover {
-        background-color: #bb2d3b !important;
+        background-color: #E37026 !important;
     }
     
     /* Ajuste fino para os cards parecerem unificados */
