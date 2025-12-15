@@ -727,12 +727,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             st.markdown(f"""
             <div style="background-color: transparent; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-botton:20px;">
                 <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                    <span><b>{qtd_patr}</b> itens encontrados</span>
-                </div>
                 <div style="text-align:right;">
                     <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL</div>
                     <div style="font-size: 1.4em; font-weight:bold;"><b>R$ {total_valor_patr:,.2f}</b></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                    <span><b>{qtd_patr}</b> itens encontrados</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
