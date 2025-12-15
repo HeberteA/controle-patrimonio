@@ -732,7 +732,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     <div style="font-size: 1.4em; font-weight:bold;"><b>R$ {total_valor_patr:,.2f}</b></div>
                 </div>
             </div>
-            <span><b>{qtd_patr}</b> itens encontrados</span>
+            <div><b>{qtd_patr}</b> itens encontrados</div>
             </div>""", unsafe_allow_html=True)
 
             st.markdown("")
