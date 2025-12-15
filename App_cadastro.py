@@ -729,7 +729,8 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span><b>{qtd_patr}</b> itens encontrados</span>
-                    <span style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
+                    <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL</div>
+                    <div style="font-size: 1.4em; font-weight:bold;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -821,7 +822,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
                 </div>
             </div>
-             <div style="font-size: 0.9rem;">{qtd_equip} equipamento(s) locado(s)</div>
+             <div><b>{qtd_equip}</b> equipamento(s) locado(s)</div>
         </div>""", unsafe_allow_html=True)
         st.markdown("")
 
