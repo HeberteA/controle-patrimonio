@@ -857,9 +857,9 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     if st.button("Atualizar Status", key="btn_update_1"):
                         modal_atualizar_status(
                             nome_equipamento="FORCADO SIMPLES 35X90",
-                            status_atual="Ativa (Em Uso)",
+                            status_atual="Ativa",
                             responsavel_atual="DEVYD ROBERTO"
-                    )    
+                        )    
                             
                 
                 with c_btn2:
