@@ -300,6 +300,32 @@ def gerar_ficha_qr_code(row_series):
     except Exception as e:
         st.error(f"Erro ao gerar Ficha QR: {e}")
         return None
+
+@st.dialog("Atualizar Status")
+def modal_atualizar_status(nome_equipamento, status_atual, responsavel_atual):
+    st.write(f"Equipamento: **{nome_equipamento}**")
+
+    novo_status = st.selectbox(
+        "Novo Status:",
+        ["Ativa", "Manutenção", "Devolvido"],
+        index=0 
+    )
+    
+    responsavel = st.text_input("Responsável:", value=responsavel_atual)
+
+    st.write("") 
+
+    col_cancelar, col_salvar = st.columns([1, 1])
+
+    with col_cancelar:
+        if st.button("Cancelar", use_container_width=True):
+            st.rerun() 
+
+    with col_salvar:
+        if st.button("Salvar", type="primary", use_container_width=True):
+            st.success("Status atualizado com sucesso!")
+            time.sleep(1)
+            st.rerun()
         
 def tela_de_login():
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -725,7 +751,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
                                 <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[TOMBAMENTO_COL]}</div>
                             </div>
-                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
+                            <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 10px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
                         </div>
                         <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
                             <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[OBRA_COL]}</div>
@@ -799,7 +825,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 
                 st_loc = str(row['status'])
                 cor_loc = "#dc3545" 
-                if "Ativo" in st_loc or "Transporte" in st_loc: cor_loc = "#0d6efd"
+                if "Ativo" in st_loc or "Manutenção" in st_loc: cor_loc = "#0d6efd"
                 bg_loc = f"{cor_loc}22"
 
                 html_loc = f"""
@@ -828,11 +854,11 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
                 
                 with c_btn1:
-                    if st.button("Atualizar Status", key=f"btn_upd_{row['id']}", type="secondary", use_container_width=True):
-                        novo_st = "Devolvido" if row['status'] != "Devolvido" else "Ativo"
-                        conn.table("locacoes").update({"status": novo_st}).eq("id", row['id']).execute()
+                    if st.button("Atualizar Status", key="btn_update_1", type="primary"):
+                        modal_atualizar_status()
                         st.cache_data.clear()
                         st.rerun()
+                            
                 
                 with c_btn2:
                     if st.button("Excluir Registro", key=f"btn_del_{row['id']}", type="primary", use_container_width=True):
