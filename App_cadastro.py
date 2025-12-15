@@ -658,11 +658,18 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         background-color: transparent !important;
         color: white !important;
     }
-
-    
+    button[kind="primary"] {
+        background-color: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 500 !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #E37026 !important;
+    }
     /* Ajuste fino para os cards parecerem unificados */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #1E1E1E; /* Cor de fundo do card */
+        background-color: #E37026; /* Cor de fundo do card */
         border: 1px solid #333;
         border-radius: 10px;
         padding: 15px;
@@ -747,12 +754,12 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     
                     with c_btn_nf:
                         if row[NF_LINK_COL]:
-                            st.link_button("Nota Fiscal", row[NF_LINK_COL], use_container_width=True)
+                            st.link_button("Nota Fiscal", row[NF_LINK_COL], type="primary", use_container_width=True)
                         else:
                             st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", type="secondary", use_container_width=True)
 
                     with c_btn_qr:
-                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}", use_container_width=True):
+                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}", type="primary", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
                             if pdf_bytes:
                                 b64 = base64.b64encode(pdf_bytes).decode()
