@@ -668,8 +668,8 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             qtd_patr = dados_filt.shape[0]
             
             st.markdown(f"""
-            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
-                <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h4 style="margin:5px; color: #E37026;">Resumo Patrimonial</h4>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span><b>{qtd_patr}</b> itens encontrados</span>
                     <span style="font-size: 0.75rem; color: #FFFFFF; font-weight: 700; letter-spacing: 1.5px;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
@@ -679,7 +679,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 
             for index, row in dados_filt.iterrows():
                 with st.container():
-                    cor_status = "#28a745" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#dc3545"
+                    cor_status = "#35BE53" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#dc3545"
                     bg_status = f"{cor_status}22" 
                     valor_fmt = f"R$ {row[VALOR_COL]:,.2f}"
 
@@ -711,7 +711,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                             </div>
                             <div style="min-width: 100px;">
                                 <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
-                                <span style="color: #4cd137; font-weight: bold;">{valor_fmt}</span>
+                                <span style="color: #35BE53; font-weight: bold;">{valor_fmt}</span>
                             </div>
                         </div>
                         <div style="margin-top: 15px; background-color: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; font-size: 0.85em; color: #aaa; font-style: italic;">
@@ -805,7 +805,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         </div>
                         <div style="min-width: 100px;">
                             <b style="color: #888; font-size: 0.8em; display:block;">VALOR</b>
-                            <span style="color: #4cd137; font-weight: bold;">{valor_loc_fmt}</span>
+                            <span style="color: #35BE53; font-weight: bold;">{valor_loc_fmt}</span>
                         </div>
                     </div>
                     <div style="margin-top: 10px; background-color: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
