@@ -815,8 +815,8 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         total_mensal = df_l["valor_mensal"].sum()
         qtd_equip = df_l.shape[0]
         
-        st.markdown(f"""
-        <div style="background-color: transparent; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-botton:20px;">
+        st.markdown(textwrap.dedent(f"""
+        <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Resumo Locações'}</h4>
                 <div style="text-align:right;">
@@ -825,7 +825,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 </div>
             </div>
              <div><b>{qtd_equip}</b> equipamento(s) locado(s)</div>
-        </div>""", unsafe_allow_html=True)
+        </div>"""), unsafe_allow_html=True)
         st.markdown("")
 
         for index, row in df_l.iterrows():
