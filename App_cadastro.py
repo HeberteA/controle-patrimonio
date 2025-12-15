@@ -508,30 +508,45 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
     tab_patrimonio, tab_locacao = st.tabs(["Patrimônio", "Locação"])
 
     with tab_patrimonio:
+        st.markdown("### Registrar Novo Ativo")
+        
         obra_para_cadastro = None
         if is_admin:
-            obra_para_cadastro = st.selectbox("Obra de Destino (Patrimônio)", options=lista_obras_app, index=None, key="patrimonio_obra_select")
+            obra_para_cadastro = st.selectbox("Obra de Destino", options=lista_obras_app, index=None, key="patr_obra_sel")
         else:
             obra_para_cadastro = st.session_state.selected_obra
 
         if not obra_para_cadastro:
-            st.info("Selecione uma obra para iniciar o cadastro.")
+            st.info("Selecione uma obra acima para liberar o formulário.")
         else:
             with st.form("cadastro_patrimonio_form", clear_on_submit=True):
-                col1, col2 = st.columns(2)
-                with col1:
-                    nome_produto = st.text_input("Nome do Produto")
-                    num_tombamento_manual = st.text_input("N° de Tombamento (Opcional - Automático se vazio)")
-                    num_nota_fiscal = st.text_input("N° da Nota Fiscal")
+                p1_c1, p1_c2, p1_c3 = st.columns([3, 1.5, 1.5])
+                with p1_c1:
+                    nome_produto = st.text_input("Nome do Produto/Ativo")
+                with p1_c2:
+                    num_tombamento_manual = st.text_input("Tombamento (Opcional)")
+                with p1_c3:
+                    status_selecionado = st.selectbox("Status Inicial", options=lista_status, index=0)
+
+                p2_c1, p2_c2, p2_c3, p2_c4 = st.columns([2, 2, 1.5, 1.5])
+                with p2_c1:
+                    local_uso = st.text_input("Local de Uso (Ex: Almoxarifado)")
+                with p2_c2:
+                    responsavel = st.text_input("Responsável Pelo Ativo")
+                with p2_c3:
+                    num_nota_fiscal = st.text_input("N° Nota Fiscal")
+                with p2_c4:
                     valor_produto = st.number_input("Valor (R$)", min_value=0.0, step=100.00, format="%.2f")
-                    status_selecionado = st.selectbox("Status", options=lista_status, index=0)
-                with col2:
-                    especificacoes = st.text_area("Especificações")
-                    observacoes = st.text_area("Observações")
-                    local_uso = st.text_input("Local de Uso")
-                    responsavel = st.text_input("Responsável")
+
+                p3_c1, p3_c2 = st.columns(2)
+                with p3_c1:
+                    especificacoes = st.text_area("Especificações Técnicas", height=100)
+                with p3_c2:
+                    observacoes = st.text_area("Observações Gerais", height=100)
             
+                st.write("---")
                 uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
+                
                 submitted = st.form_submit_button("Cadastrar Patrimônio", type="primary", use_container_width=True)
 
                 if submitted:
@@ -539,7 +554,6 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                         st.error("⚠️ Preencha os campos obrigatórios: Nome, NF, Local e Responsável.")
                     else:
                         link_nota_fiscal = ""
-                        
                         num_final_envio = num_tombamento_manual.strip() if num_tombamento_manual else None
 
                         if uploaded_pdf:
@@ -548,7 +562,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
 
                         novo_item_dict = {
                             OBRA_COL: obra_para_cadastro,
-                            TOMBAMENTO_COL: num_final_envio, 
+                            TOMBAMENTO_COL: num_final_envio,
                             NOME_COL: nome_produto,
                             ESPEC_COL: especificacoes,
                             OBS_COL: observacoes,
@@ -594,7 +608,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             with l2_c3:
                 loc_contrato = st.text_input("Contrato/PC (Sienge)")
             with l2_c4:
-                loc_status = st.selectbox("Status Inicial", ["Em Transporte (Padrão)", "Ativo", "Devolvido"])
+                loc_status = st.selectbox("Status Inicial", ["Em Transporte", "Ativo", "Devolvido"])
 
             l3_c1, l3_c2 = st.columns(2)
             with l3_c1:
@@ -640,39 +654,74 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         else:
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                search_term = st.text_input("Buscar Patrimônio", key="search_patrimonio")
+                search_term = st.text_input("Buscar Patrimônio", key="search_patrimonio", placeholder="Nome, Tombamento ou Responsável...")
             
             dados_filt = dados_patrimonio.copy()
             if search_term:
                 dados_filt = dados_filt[
                     dados_filt[NOME_COL].str.contains(search_term, case=False, na=False) |
-                    dados_filt[TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False)
+                    dados_filt[TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False) |
+                    dados_filt[RESPONSAVEL_COL].str.contains(search_term, case=False, na=False)
                 ]
+
+            total_valor_patr = dados_filt[VALOR_COL].sum()
+            qtd_patr = dados_filt.shape[0]
             
-            st.dataframe(dados_filt, use_container_width=True, hide_index=True, column_config={
-                ID_COL: None,
-                NF_LINK_COL: st.column_config.LinkColumn("PDF", display_text="Abrir"),
-                VALOR_COL: st.column_config.NumberColumn("Valor", format="R$ %.2f")
-            })
-            
-            st.write("---")
-            st.subheader("Gerar Etiqueta QR Code")
-            patrimonio_opts = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]}" for _, row in dados_filt.iterrows()]
-            selecao_qr = st.selectbox("Selecione o item para imprimir etiqueta", options=patrimonio_opts, index=None)
-            
-            if selecao_qr:
-                tomb_sel = selecao_qr.split(" - ")[0]
-                row_sel = dados_filt[dados_filt[TOMBAMENTO_COL].astype(str) == tomb_sel].iloc[0]
-                
-                pdf_bytes = gerar_ficha_qr_code(row_sel)
-                if pdf_bytes:
-                    st.download_button(
-                        label="Baixar Ficha",
-                        data=pdf_bytes,
-                        file_name=f"Etiqueta_{tomb_sel}.pdf",
-                        mime="application/pdf",
-                        type="secondary"
-                    )
+            st.markdown(f"""
+            <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
+                <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                    <span><b>{qtd_patr}</b> itens encontrados</span>
+                    <span style="font-size: 1.2em;"><b>VALOR TOTAL: R$ {total_valor_patr:,.2f}</b></span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            for index, row in dados_filt.iterrows():
+                with st.container():
+                    cor_status = "#28a745" if row[STATUS_COL] == "Disponível" else "#ffc107" if row[STATUS_COL] == "Em Uso" else "#6c757d"
+                    
+                    st.markdown(f"""
+                    <div style="background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div>
+                                <h3 style="margin:0; color: white;">{row[NOME_COL]}</h3>
+                                <p style="color: #E37026; margin: 0; font-weight: bold;">Tombamento: {row[TOMBAMENTO_COL]}</p>
+                            </div>
+                            <span style="background-color: {cor_status}33; color: {cor_status}; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; border: 1px solid {cor_status};">
+                                {row[STATUS_COL]}
+                            </span>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display:flex; justify-content:space-between; flex-wrap: wrap; color: #CCC; font-size: 0.9em;">
+                            <div style="margin-right: 15px;"><b>Obra:</b> {row[OBRA_COL]}</div>
+                            <div style="margin-right: 15px;"><b>Local:</b> {row[LOCAL_COL]}</div>
+                            <div style="margin-right: 15px;"><b>Resp:</b> {row[RESPONSAVEL_COL]}</div>
+                            <div><b>Valor:</b> R$ {row[VALOR_COL]:,.2f}</div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
+                            <i>{str(row[ESPEC_COL])[:100]}...</i>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    c_b1, c_b2, c_void = st.columns([1, 1, 3])
+                    
+                    with c_b1:
+                        if row[NF_LINK_COL]:
+                            st.link_button("Ver Nota Fiscal", row[NF_LINK_COL])
+                        else:
+                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}")
+                            
+                    with c_b2:
+                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}"):
+                            pdf_bytes = gerar_ficha_qr_code(row)
+                            if pdf_bytes:
+                                b64 = base64.b64encode(pdf_bytes).decode()
+                                href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold;">⬇️ Clique para Salvar PDF</a>'
+                                st.markdown(href, unsafe_allow_html=True)
+
+                st.write("") 
 
     with tab_vis_locacao:
         if dados_locacoes.empty:
@@ -701,10 +750,10 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
         
         st.markdown(f"""
         <div style="background-color: rgba(227, 112, 38, 0.15); padding: 15px; border-radius: 10px; border: 1px solid #E37026; margin-bottom: 20px;">
-            <h4 style="margin:0; color: #E37026;">Resumo: {filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
+            <h4 style="margin:0; color: #E37026;">Resumo Locações: {filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Geral'}</h4>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                <span><b>{qtd_equip}</b> equipamento(s) locado(s)</span>
-                <span style="font-size: 1.2em;"><b>VALOR TOTAL MENSAL ESTIMADO: R$ {total_mensal:,.2f}</b></span>
+                <span><b>{qtd_equip}</b> contratos ativos</span>
+                <span style="font-size: 1.2em;"><b>MENSAL ESTIMADO: R$ {total_mensal:,.2f}</b></span>
             </div>
         </div>
         """, unsafe_allow_html=True)
