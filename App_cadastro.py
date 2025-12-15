@@ -730,11 +730,10 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 <div style="text-align:right;">
                     <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL</div>
                     <div style="font-size: 1.4em; font-weight:bold;"><b>R$ {total_valor_patr:,.2f}</b></div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                <span><b>{qtd_patr}</b> itens encontrados</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            <span><b>{qtd_patr}</b> itens encontrados</span>
+            </div>""", unsafe_allow_html=True)
 
             st.markdown("")
 
@@ -846,7 +845,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                             <h3 style="margin:0; color: white; font-size: 1.3em;">{equip_safe}</h3>
                             <span style="color: #888; font-size: 0.9em;">{row['contrato_sienge']}</span>
                         </div>
-                        <span style="background-color: {bg_loc}; color: {cor_loc}; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; border: 1px solid {cor_loc};">{st_loc}</span>
+                        <span style="background-color: {bg_loc}; color: {cor_loc}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_loc}; font-weight: bold;">{st_loc}</span>
                     </div>
                     <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
                         <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
