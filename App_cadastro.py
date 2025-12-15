@@ -4,10 +4,13 @@ from st_supabase_connection import SupabaseConnection
 from streamlit_option_menu import option_menu 
 import base64
 import io
+import tempfile  
 from datetime import datetime
 import plotly.express as px
-from fpdf import FPDF
+from fpdf import FPDF 
 import openpyxl 
+import qrcode 
+from PIL import Image  
 
 st.set_page_config(
     page_title="Controle de Patrimônio Lavie",
@@ -149,9 +152,7 @@ def carregar_dados_app():
         
         if VALOR_COL in patrimonio_df.columns:
             patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
-        else:
-            patrimonio_df[VALOR_COL] = 0.0 
-
+        
         movimentacoes_resp = conn.table("movimentacoes").select("*").execute()
         movimentacoes_df = pd.DataFrame(movimentacoes_resp.data)
         if movimentacoes_df.empty:
@@ -159,19 +160,29 @@ def carregar_dados_app():
                 ID_COL, OBRA_COL, TOMBAMENTO_COL, "tipo_movimentacao", 
                 "data_hora", "responsavel_movimentacao", "observacoes"
             ])
+            
+        locacoes_resp = conn.table("locacoes").select("*").execute()
+        locacoes_df = pd.DataFrame(locacoes_resp.data)
+        colunas_locacao = [
+            "id", "equipamento", "obra_destino", "responsavel", "quantidade", 
+            "unidade", "valor_mensal", "contrato_sienge", "status", 
+            "data_inicio", "data_previsao_fim"
+        ]
+        
+        if locacoes_df.empty:
+            locacoes_df = pd.DataFrame(columns=colunas_locacao)
+        else:
+            locacoes_df['data_inicio'] = pd.to_datetime(locacoes_df['data_inicio'], errors='coerce')
+            locacoes_df['data_previsao_fim'] = pd.to_datetime(locacoes_df['data_previsao_fim'], errors='coerce')
 
-        return lista_status, lista_obras, patrimonio_df, movimentacoes_df
+        return lista_status, lista_obras, patrimonio_df, movimentacoes_df, locacoes_df
     
     except KeyError as e:
-        st.error(f"Erro Crítico de 'KeyError' ao carregar os dados: {e}")
-        st.error(f"Isso significa que o nome de uma coluna no seu Supabase (ex: '{e.args[0]}') não bate com o código.")
-        st.error("Verifique suas tabelas 'status' e 'obras' no Supabase e compare com o código.")
-        st.exception(e)
-        return [], [], pd.DataFrame(), pd.DataFrame()
+        st.error(f"Erro Crítico de 'KeyError'. Coluna não encontrada: {e}")
+        return [], [], pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     except Exception as e:
         st.error(f"Erro ao carregar dados do Supabase: {e}")
-        st.exception(e)
-        return [], [], pd.DataFrame(), pd.DataFrame()
+        return [], [], pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 @st.cache_data
 def to_excel(df):
@@ -235,6 +246,59 @@ def to_pdf(df, obra_nome):
         return None
     except Exception as e:
         st.error(f"Erro inesperado ao gerar PDF: {e}")
+        return None
+
+def gerar_ficha_qr_code(row_series):
+    """Gera um PDF com ficha técnica e QR Code para um único item."""
+    try:
+        pdf = FPDF(orientation='P', unit='mm', format='A4')
+        pdf.add_page()
+        
+        pdf.set_fill_color(227, 112, 38)
+        pdf.rect(0, 0, 210, 20, 'F')
+        
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 16)
+        pdf.text(10, 14, "Ficha de Identificação de Ativo - LAVIE")
+        
+        qr_data = f"ID: {row_series[ID_COL]}\nItem: {row_series[NOME_COL]}\nTombamento: {row_series[TOMBAMENTO_COL]}\nObra: {row_series[OBRA_COL]}"
+        
+        qr = qrcode.QRCode(box_size=10, border=4)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img_qr = qr.make_image(fill_color="black", back_color="white")
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+            img_qr.save(tmp_file.name)
+            qr_path = tmp_file.name
+
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_y(30)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.cell(0, 10, f"Produto: {str(row_series[NOME_COL]).upper()}", ln=True)
+        
+        pdf.set_font('Helvetica', '', 11)
+        pdf.cell(0, 8, f"Tombamento: {row_series[TOMBAMENTO_COL]}", ln=True)
+        pdf.cell(0, 8, f"Obra Atual: {row_series[OBRA_COL]}", ln=True)
+        pdf.cell(0, 8, f"Responsável: {row_series[RESPONSAVEL_COL]}", ln=True)
+        pdf.cell(0, 8, f"Status: {row_series[STATUS_COL]}", ln=True)
+        
+        pdf.ln(5)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 8, "Especificações / Obs:", ln=True)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.multi_cell(110, 6, f"{str(row_series[ESPEC_COL])}\n{str(row_series[OBS_COL])}")
+
+        pdf.image(qr_path, x=130, y=30, w=60)
+        
+        pdf.set_y(100)
+        pdf.set_font('Helvetica', 'I', 8)
+        pdf.cell(0, 10, "Este código QR serve para identificação rápida e auditoria do ativo.", 0, 1, 'C')
+
+        return bytes(pdf.output())
+        
+    except Exception as e:
+        st.error(f"Erro ao gerar Ficha QR: {e}")
         return None
         
 def tela_de_login():
