@@ -304,7 +304,7 @@ def gerar_ficha_qr_code(row_series):
 def tela_de_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image("Lavie.png", width=1000)
+        st.image("Lavie.png", use_container_width=True) 
     st.title("Controle de Patrimônio")
 
     tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
@@ -312,10 +312,10 @@ def tela_de_login():
     with tab1:
         st.subheader("Login da Obra")
         try:
-            _, lista_obras, _, _ = carregar_dados_app()
+            _, lista_obras, _, _, _ = carregar_dados_app()
             
             if not lista_obras:
-                st.info("Nenhuma obra cadastrada no sistema. (Ou falha ao carregar - verifique os logs de erro acima)")
+                st.info("Nenhuma obra cadastrada no sistema.")
                 return
 
             codigos_obras = st.secrets.obra_codes
@@ -343,7 +343,7 @@ def tela_de_login():
                 st.rerun()
             else:
                 st.error("Senha de administrador incorreta.")
-
+                
 def pagina_dashboard(dados_da_obra, df_movimentacoes):
     st.header("Análise de Ativos", divider='rainbow')
 
