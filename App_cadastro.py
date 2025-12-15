@@ -4,6 +4,7 @@ from st_supabase_connection import SupabaseConnection
 from streamlit_option_menu import option_menu 
 import base64
 import io
+import time
 import tempfile  
 from datetime import datetime
 import plotly.express as px
@@ -302,16 +303,22 @@ def gerar_ficha_qr_code(row_series):
         return None
 
 @st.dialog("Atualizar Status")
-def modal_atualizar_status(nome_equipamento, status_atual, responsavel_atual):
+def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
+    opcoes_status = ["Ativa (Em Uso)", "Disponível", "Em Manutenção", "Descartado"]
+    
+    try:
+        index_atual = opcoes_status.index(status_atual)
+    except ValueError:
+        index_atual = 0
 
     novo_status = st.selectbox(
         "Novo Status:",
-        ["Ativa", "Manutenção", "Devolvido"],
-        index=0 
+        opcoes_status,
+        index=index_atual
     )
     
-    responsavel = st.text_input("Responsável:", value=responsavel_atual)
+    novo_responsavel = st.text_input("Responsável:", value=responsavel_atual)
 
     st.write("") 
 
@@ -319,12 +326,13 @@ def modal_atualizar_status(nome_equipamento, status_atual, responsavel_atual):
 
     with col_cancelar:
         if st.button("Cancelar", use_container_width=True):
-            st.rerun() 
+            st.rerun()
 
     with col_salvar:
         if st.button("Salvar", type="primary", use_container_width=True):
-            st.success("Status atualizado com sucesso!")
-            time.sleep(1)
+            
+            st.success("Atualizado!")
+            time.sleep(0.5)
             st.rerun()
         
 def tela_de_login():
@@ -856,10 +864,11 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 with c_btn1:
                     if st.button("Atualizar Status", key="btn_update_1"):
                         modal_atualizar_status(
-                            nome_equipamento="FORCADO SIMPLES 35X90",
-                            status_atual="Ativa",
-                            responsavel_atual="DEVYD ROBERTO"
-                        )    
+                            id_equipamento=item['id'],
+                            nome_equipamento=item['equipamento'],
+                            status_atual=item['status'],
+                            responsavel_atual=item['resp']
+                        )
                             
                 
                 with c_btn2:
