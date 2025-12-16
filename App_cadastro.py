@@ -59,10 +59,6 @@ if 'is_admin' not in st.session_state:
     st.session_state.is_admin = False
 if 'selected_obra' not in st.session_state:
     st.session_state.selected_obra = None
-if 'edit_item_id' not in st.session_state:
-    st.session_state.edit_item_id = None 
-if 'confirm_delete' not in st.session_state:
-    st.session_state.confirm_delete = False
 if 'movement_item_id' not in st.session_state:
     st.session_state.movement_item_id = None
 
@@ -79,14 +75,6 @@ LOCAL_COL = "local_de_uso"
 RESPONSAVEL_COL = "responsavel"
 VALOR_COL = "valor"
 
-def get_img_as_base64(file):
-    try:
-        with open(file, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except Exception:
-        return None
-
 def upload_to_supabase_storage(file_data, file_name, file_type='application/pdf'):
     try:
         conn_storage = st.connection(
@@ -96,27 +84,16 @@ def upload_to_supabase_storage(file_data, file_name, file_type='application/pdf'
             key=st.secrets["connections"]["supabase"]["key"]
         )
         bucket_name = "notas-fiscais"
-        
         conn_storage.storage.from_(bucket_name).upload(
             file=file_data,
             path=file_name,
             file_options={"content-type": file_type, "x-upsert": "true"}
         )
-        
         response = conn_storage.storage.from_(bucket_name).get_public_url(file_name)
         return response
-    
     except Exception as e:
         st.error(f"Erro no upload para o Supabase Storage: {e}")
         return None
-
-def gerar_numero_tombamento_sequencial(existing_data, obra_para_gerar):
-    if not obra_para_gerar: return None
-    itens = existing_data[existing_data[OBRA_COL] == obra_para_gerar]
-    if itens.empty: return "1"
-    numeros_numericos = pd.to_numeric(itens[TOMBAMENTO_COL], errors='coerce').dropna()
-    if numeros_numericos.empty: return "1"
-    return str(int(numeros_numericos.max()) + 1)
 
 try:
     conn = st.connection(
@@ -186,70 +163,6 @@ def carregar_dados_app():
         st.error(f"Erro ao carregar dados do Supabase: {e}")
         return [], [], pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-@st.cache_data
-def to_excel(df):
-    """Converte DataFrame para um arquivo Excel em memória."""
-    try:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Patrimonio')
-        processed_data = output.getvalue()
-        return processed_data
-    except Exception as e:
-        st.error(f"Erro ao gerar Excel: {e}")
-        return None 
-
-def to_pdf(df, obra_nome):
-    try:
-        pdf = FPDF(orientation='L', unit='mm', format='A4')
-        pdf.add_page()
-        logo_path = "Lavie.png"
-        try:
-            pdf.image(logo_path, x=10, y=3, w=50)
-        except Exception as e:
-            print(f"Aviso: Não foi possível carregar o logo '{logo_path}'. Erro: {e}")
-        pdf.set_font('Arial', 'B', 16)
-        
-        titulo = f'Relatorio de Patrimonio - Obra: {obra_nome}'.encode('latin-1', 'replace').decode('latin-1')
-        pdf.cell(0, 10, titulo, 0, 1, 'C')
-        pdf.ln(10)
-
-        pdf.set_font('Arial', 'B', 8)
-        
-        col_widths = {
-            TOMBAMENTO_COL: 40, 
-            NOME_COL: 60, 
-            STATUS_COL: 30, 
-            LOCAL_COL: 40, 
-            RESPONSAVEL_COL: 40, 
-            VALOR_COL: 25
-        }
-        cols_to_export = list(col_widths.keys())
-        
-        for col_name in cols_to_export:
-            pdf.cell(col_widths[col_name], 7, col_name.replace("_", " ").title(), 1, 0, 'C')
-        pdf.ln()
-
-        pdf.set_font('Arial', '', 8)
-        
-        df_pdf = df[cols_to_export].fillna('') 
-        
-        for _, row in df_pdf.iterrows():
-            for col_name in cols_to_export:
-                text = str(row[col_name]).encode('latin-1', 'replace').decode('latin-1')
-                pdf.cell(col_widths[col_name], 6, text, 1)
-            pdf.ln()
-
-        return bytes(pdf.output(dest='S'))
-    
-    except KeyError as e:
-        st.error(f"Erro ao gerar PDF (KeyError): {e}")
-        st.error("Isso geralmente acontece porque os dados estão vazios (devido a um erro anterior) ou as 'Constantes das Colunas' no código não batem com o Supabase.")
-        return None
-    except Exception as e:
-        st.error(f"Erro inesperado ao gerar PDF: {e}")
-        return None
-
 def gerar_ficha_qr_code(row_series):
     """Gera um PDF com ficha técnica e QR Code para um único item."""
     try:
@@ -292,29 +205,12 @@ def gerar_ficha_qr_code(row_series):
         pdf.multi_cell(110, 6, f"{str(row_series[ESPEC_COL])}\n{str(row_series[OBS_COL])}")
 
         pdf.image(qr_path, x=130, y=30, w=60)
-        
-        pdf.set_y(100)
-        pdf.set_font('Helvetica', 'I', 8)
-        pdf.cell(0, 10, "Este código QR serve para identificação rápida e auditoria do ativo.", 0, 1, 'C')
-
         return bytes(pdf.output())
         
     except Exception as e:
         st.error(f"Erro ao gerar Ficha QR: {e}")
         return None
 
-def atualizar_status_db(id_item, novo_status, novo_responsavel):
-    try:
-        response = conn.table("locacoes").update({
-            "status": novo_status,             
-            "responsavel": novo_responsavel,   
-        }).eq("id", id_item).execute() 
-        
-        return True
-    except Exception as e:
-        st.error(f"Erro ao atualizar banco: {e}")
-        return False
-        
 @st.dialog("Editar Patrimônio")
 def modal_editar_patrimonio(item_series, lista_status):
     st.write(f"Editando: **{item_series[NOME_COL]}**")
@@ -763,7 +659,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     except Exception as e:
                         st.error(f"Erro ao salvar locação: {e}")
                         
-def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status):
+def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status, lista_obras):
     st.header("Consulta e Relatórios", divider="orange")
     st.markdown("""
     <style>
@@ -789,27 +685,10 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
     }
     </style>
     """, unsafe_allow_html=True)
-    idx_aba = st.session_state.get("aba_interna_ativa", 0)
     
-    aba_selecionada = option_menu(
-        menu_title=None,
-        options=["Patrimônio", "Locações Ativas"],
-        icons=["box-seam", "truck"], 
-        default_index=idx_aba, 
-        orientation="horizontal",
-        styles={
-            "container": {"padding": "0!important", "background-color": "transparent"},
-            "nav-link": {"font-size": "16px", "text-align": "center", "margin":"5px", "--hover-color": "#333"},
-            "nav-link-selected": {"background-color": "#E37026"},
-        }
-    )
+    tab_patrimonio, tab_locacoes = st.tabs(["Patrimônio", "Locações Ativas"])
     
-    if aba_selecionada == "Patrimônio":
-        st.session_state["aba_interna_ativa"] = 0
-    elif aba_selecionada == "Locações Ativas":
-        st.session_state["aba_interna_ativa"] = 1
-    
-    if aba_selecionada == "Patrimônio":
+    with tab_patrimonio:
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
         else:
@@ -896,7 +775,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" id="d_{row[ID_COL]}"></a><script>document.getElementById("d_{row[ID_COL]}").click();</script>'
                                 st.markdown(href, unsafe_allow_html=True)
                                 
-    elif aba_selecionada == "Locações Ativas":
+    with tab_locacoes:
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
         else: 
@@ -983,87 +862,93 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                 
     
                 
-def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
+def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes, lista_status, lista_obras):
     st.header("Gerenciamento Avançado", divider='orange')
     
-    _, lista_obras_app, _, df_locacoes_full, _ = carregar_dados_app()
-
     if not st.session_state.is_admin:
-        df_locacoes_full = df_locacoes_full[df_locacoes_full['obra_destino'] == st.session_state.selected_obra]
+        df_locacoes_view = dados_locacoes_full[dados_locacoes_full['obra_destino'] == st.session_state.selected_obra]
+    else:
+        df_locacoes_view = dados_locacoes_full
 
     tab_ger_patr, tab_ger_loc = st.tabs(["Gerenciar Patrimônio", "Gerenciar Locações"])
 
     with tab_ger_patr:
         if dados_da_obra.empty:
-            st.info("Sem itens.")
+            st.info("Sem itens de patrimônio.")
         else:
             c1, c2 = st.columns(2)
             with c1: filter_st = st.selectbox("Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
-            with c2: search_g = st.text_input("Buscar Item", key="search_ger")
+            with c2: search_g = st.text_input("Buscar Item (ID ou Nome)", key="search_ger")
             
             df_v = dados_da_obra.copy()
             if filter_st != "Todos": df_v = df_v[df_v[STATUS_COL] == filter_st]
-            if search_g: df_v = df_v[df_v[NOME_COL].str.contains(search_g, case=False, na=False)]
+            if search_g: 
+                df_v = df_v[
+                    df_v[NOME_COL].str.contains(search_g, case=False, na=False) |
+                    df_v[TOMBAMENTO_COL].astype(str).str.contains(search_g, case=False, na=False)
+                ]
             
             st.dataframe(df_v[[TOMBAMENTO_COL, NOME_COL, STATUS_COL, RESPONSAVEL_COL]], use_container_width=True, hide_index=True)
             
-            st.write("---")
-            st.subheader("Ações")
-
+            st.markdown("### Selecionar Item para Ação")
             opts = df_v.apply(lambda x: f"{x[TOMBAMENTO_COL]} - {x[NOME_COL]}", axis=1).tolist()
-            sel_item = st.selectbox("Selecione o Item para Editar/Movimentar:", options=opts, index=None)
+            sel_item = st.selectbox("Selecione o Item:", options=opts, index=None, placeholder="Clique para selecionar...")
             
             if sel_item:
                 tomb = sel_item.split(" - ")[0]
                 row_sel = df_v[df_v[TOMBAMENTO_COL].astype(str) == tomb].iloc[0]
                 
-                b1, b2, b3 = st.columns(3)
-                with b1:
-                    if st.button("Editar Dados", use_container_width=True, type="primary"):
-                        modal_editar_patrimonio(row_sel, lista_status)
-                with b2:
-                    if st.button("Movimentar", use_container_width=True):
-                        st.session_state.movement_item_id = row_sel[ID_COL]
-                        st.rerun()
-                with b3:
-                    if st.button("Remover", use_container_width=True, type="secondary"):
-                         conn.table("patrimonio").delete().eq(ID_COL, int(row_sel[ID_COL])).execute()
-                         st.success("Removido.")
-                         time.sleep(1)
-                         st.cache_data.clear()
-                         st.rerun()
+                with st.container(border=True):
+                    st.write(f"**Item Selecionado:** {row_sel[NOME_COL]} (ID: {row_sel[ID_COL]})")
+                    
+                    b1, b2, b3 = st.columns(3)
+                    with b1:
+                        if st.button("Editar Dados Completos", use_container_width=True, type="primary"):
+                            modal_editar_patrimonio(row_sel, lista_status)
+                    with b2:
+                        if st.button("Registrar Movimentação", use_container_width=True):
+                            st.session_state.movement_item_id = row_sel[ID_COL]
+                    with b3:
+                        if st.button("Excluir Item", use_container_width=True, type="secondary"):
+                             conn.table("patrimonio").delete().eq(ID_COL, int(row_sel[ID_COL])).execute()
+                             st.success("Removido.")
+                             time.sleep(1)
+                             st.cache_data.clear()
+                             st.rerun()
 
-                if st.session_state.movement_item_id == row_sel[ID_COL]:
-                    with st.container(border=True):
-                        st.write(f"Movimentando: {row_sel[NOME_COL]}")
-                        tipo = st.radio("Tipo", ["Entrada", "Saída"], horizontal=True)
-                        resp = st.text_input("Responsável Mov.")
-                        obs = st.text_area("Obs Mov.")
-                        if st.button("Confirmar"):
-                            conn.table("movimentacoes").insert({
-                                OBRA_COL: row_sel[OBRA_COL], TOMBAMENTO_COL: row_sel[TOMBAMENTO_COL],
-                                "tipo_movimentacao": tipo, "data_hora": datetime.now().isoformat(),
-                                "responsavel_movimentacao": resp, OBS_COL: obs
-                            }).execute()
-                            novo_st = "Disponível" if tipo == "Entrada" else "Em Uso Externo"
-                            conn.table("patrimonio").update({STATUS_COL: novo_st}).eq(ID_COL, int(row_sel[ID_COL])).execute()
-                            st.success("Movimentado!")
-                            st.session_state.movement_item_id = None
-                            st.rerun()
+                    if st.session_state.movement_item_id == row_sel[ID_COL]:
+                        st.divider()
+                        st.markdown("#### Nova Movimentação")
+                        with st.form("form_movimentacao"):
+                            tipo = st.radio("Tipo", ["Entrada", "Saída"], horizontal=True)
+                            resp = st.text_input("Responsável pela Movimentação")
+                            obs = st.text_area("Observações")
+                            if st.form_submit_button("Confirmar Movimentação", type="primary"):
+                                conn.table("movimentacoes").insert({
+                                    OBRA_COL: row_sel[OBRA_COL], TOMBAMENTO_COL: row_sel[TOMBAMENTO_COL],
+                                    "tipo_movimentacao": tipo, "data_hora": datetime.now().isoformat(),
+                                    "responsavel_movimentacao": resp, OBS_COL: obs
+                                }).execute()
+                                novo_st = "ATIVO" if tipo == "Entrada" else "EMPRÉSTIMO"
+                                conn.table("patrimonio").update({STATUS_COL: novo_st}).eq(ID_COL, int(row_sel[ID_COL])).execute()
+                                st.success("Movimentação registrada com sucesso!")
+                                st.session_state.movement_item_id = None
+                                time.sleep(1)
+                                st.rerun()
 
     with tab_ger_loc:
-        if df_locacoes_full.empty:
-            st.info("Sem locações.")
+        if df_locacoes_view.empty:
+            st.info("Sem locações cadastradas.")
         else:
             search_l = st.text_input("Buscar Locação", key="search_ger_loc")
-            df_lv = df_locacoes_full.copy()
+            df_lv = df_locacoes_view.copy()
             if search_l: df_lv = df_lv[df_lv["equipamento"].str.contains(search_l, case=False, na=False)]
             
-            st.dataframe(df_lv[["equipamento", "obra_destino", "status", "valor_mensal"]], use_container_width=True, hide_index=True)
+            st.dataframe(df_lv[["id", "equipamento", "obra_destino", "status", "valor_mensal"]], use_container_width=True, hide_index=True)
             
-            st.write("---")
+            st.markdown("### Selecionar Locação")
             opts_l = df_lv.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
-            sel_loc = st.selectbox("Selecione Locação:", options=opts_l, index=None)
+            sel_loc = st.selectbox("Selecione:", options=opts_l, index=None, placeholder="Clique para selecionar...")
             
             if sel_loc:
                 lid = int(sel_loc.split(" - ")[0])
@@ -1072,9 +957,9 @@ def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, 
                 bl1, bl2 = st.columns(2)
                 with bl1:
                     if st.button("Editar Locação", key="btn_g_el", type="primary", use_container_width=True):
-                        modal_editar_locacao(r_loc, lista_obras_app)
+                        modal_editar_locacao(r_loc, lista_obras)
                 with bl2:
-                    if st.button("Excluir", key="btn_g_dl", type="secondary", use_container_width=True):
+                    if st.button("Excluir Locação", key="btn_g_dl", type="secondary", use_container_width=True):
                         conn.table("locacoes").delete().eq("id", lid).execute()
                         st.success("Excluído.")
                         time.sleep(1)
@@ -1147,13 +1032,13 @@ def app_principal():
         pagina_dashboard(dados_patrimonio, df_movimentacoes)
         
     elif selected_page == "Cadastrar Item":
-        pagina_cadastrar_item(is_admin, lista_status, lista_obras, dados_patrimonio)
+        pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, dados_patrimonio)
         
     elif selected_page == "Consulta Geral":
-        pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes_filt, lista_status)
+        pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes_filt, lista_status, lista_obras_app)
         
     elif selected_page == "Gerenciar Itens":
-        pagina_gerenciar_itens(dados_patrimonio, existing_data_full, df_movimentacoes, lista_status)
+        pagina_gerenciar_itens(dados_patrimonio, dados_locacoes_filt, df_movimentacoes, lista_status, lista_obras_app)
 
 if not st.session_state.logged_in:
     tela_de_login()
