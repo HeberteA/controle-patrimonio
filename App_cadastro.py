@@ -305,7 +305,7 @@ def gerar_ficha_qr_code(row_series):
 
 def atualizar_status_db(id_item, novo_status, novo_responsavel):
     try:
-        response = supabase.table("locacoes").update({
+        response = conn.table("locacoes").update({
             "status": novo_status,             
             "responsavel": novo_responsavel,   
         }).eq("id", id_item).execute() 
