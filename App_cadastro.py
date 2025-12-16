@@ -802,6 +802,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
             "nav-link": {"font-size": "16px", "text-align": "center", "margin":"5px", "--hover-color": "#333"},
             "nav-link-selected": {"background-color": "#E37026"},
         }
+    )
     
     if aba_selecionada == "Patrimônio":
         st.session_state["aba_interna_ativa"] = 0
