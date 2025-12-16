@@ -345,8 +345,8 @@ def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, respo
         if st.button("Salvar", type="primary", use_container_width=True):
             sucesso = atualizar_status_db(id_equipamento, novo_status, novo_responsavel)
             if sucesso:
-                st.success("Status atualizado no banco!")
-                time.sleep(1)
+                st.success("Salvo!")
+                st.session_state["aba_interna_ativa"] = 1
                 st.cache_data.clear() 
                 st.rerun()
             else:
@@ -720,10 +720,26 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
     }
     </style>
     """, unsafe_allow_html=True)
+    idx_aba = st.session_state.get("aba_interna_ativa", 0)
     
-    tab_vis_patrimonio, tab_vis_locacao = st.tabs(["Patrimônio", "Locações Ativas"])
-
-    with tab_vis_patrimonio:
+    aba_selecionada = option_menu(
+        menu_title=None,
+        options=["Patrimônio", "Locações Ativas"],
+        icons=["box-seam", "truck"], 
+        default_index=idx_aba, 
+        orientation="horizontal",
+        styles={
+            "container": {"padding": "0!important", "background-color": "transparent"},
+            "nav-link": {"font-size": "16px", "text-align": "center", "margin":"5px", "--hover-color": "#333"},
+            "nav-link-selected": {"background-color": "#E37026"},
+        }
+    
+    if aba_selecionada == "Patrimônio":
+        st.session_state["aba_interna_ativa"] = 0
+    elif aba_selecionada == "Locações Ativas":
+        st.session_state["aba_interna_ativa"] = 1
+    
+    if aba_selecionada == "Patrimônio":
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
         else:
@@ -809,96 +825,94 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                                 href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="display:none;" id="dl_link_{row[ID_COL]}">Download</a><script>document.getElementById("dl_link_{row[ID_COL]}").click();</script>'
                                 st.markdown(f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold; display:block; text-align:center;">⬇️ Baixar PDF</a>', unsafe_allow_html=True)
 
-    with tab_vis_locacao:
+    elif aba_selecionada == "Locações Ativas":
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
-            return
+        else: 
+            col_lf1, col_lf2 = st.columns([1, 2])
+            with col_lf1:
+                obras_loc_disp = sorted(list(dados_locacoes["obra_destino"].unique()))
+                filtro_obra_loc = st.selectbox("Filtrar por Obra", ["Todas"] + obras_loc_disp)
+            with col_lf2:
+                busca_loc = st.text_input("Busca Geral", key="search_loc", placeholder="Equipamento, contrato...")
 
-        col_lf1, col_lf2 = st.columns([1, 2])
-        with col_lf1:
-            obras_loc_disp = sorted(list(dados_locacoes["obra_destino"].unique()))
-            filtro_obra_loc = st.selectbox("Filtrar por Obra", ["Todas"] + obras_loc_disp)
-        with col_lf2:
-            busca_loc = st.text_input("Busca Geral", key="search_loc", placeholder="Equipamento, contrato...")
+            df_l = dados_locacoes.copy()
+            if filtro_obra_loc != "Todas":
+                df_l = df_l[df_l["obra_destino"] == filtro_obra_loc]
+            if busca_loc:
+                df_l = df_l[df_l["equipamento"].str.contains(busca_loc, case=False, na=False) | df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)]
 
-        df_l = dados_locacoes.copy()
-        if filtro_obra_loc != "Todas":
-            df_l = df_l[df_l["obra_destino"] == filtro_obra_loc]
-        if busca_loc:
-            df_l = df_l[df_l["equipamento"].str.contains(busca_loc, case=False, na=False) | df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)]
-
-        total_mensal = df_l["valor_mensal"].sum()
-        qtd_equip = df_l.shape[0]
-        
-        st.markdown(textwrap.dedent(f"""
-        <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; padding: 20px; margin-botton:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Resumo Locações'}</h4>
-                <div style="text-align:right;">
-                    <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL MENSAL ESTIMADO</div>
-                    <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
-                </div>
-            </div>
-             <div><b>{qtd_equip}</b> equipamento(s) locado(s)</div>
-        </div>"""), unsafe_allow_html=True)
-
-        for index, row in df_l.iterrows():
-            with st.container(border=False):
-                d_inicio = pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'
-                d_fim = pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'
-                valor_loc_fmt = f"R$ {row['valor_mensal']:,.2f}"
-                equip_safe = str(row['equipamento']).replace('"', '&quot;')
-                
-                st_loc = str(row['status'])
-                if st_loc == "ATIVO":
-                    cor_loc = "#35BE53" 
-                elif st_loc in ["MANUTENÇÃO"]:
-                    cor_loc = "#ffc107" 
-                else:
-                    cor_loc = "#dc3545" 
-                bg_loc = f"{cor_loc}22"
-                st.header("", divider="orange")
-
-                html_loc = f"""
-                <div style="margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div>
-                            <h3 style="margin:0; color: white; font-size: 1.3em;">{equip_safe}</h3>
-                            <span style="color: #888; font-size: 0.9em;">{row['contrato_sienge']}</span>
-                        </div>
-                        <span style="background-color: {bg_loc}; color: {cor_loc}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_loc}; font-weight: bold;">{st_loc}</span>
-                    </div>
-                    <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
-                        <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
-                        <div style="min-width: 80px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
-                        <div style="min-width: 140px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row['responsavel']}</div>
-                        <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_loc_fmt}</span></div>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
-                        <span>Início: {d_inicio}</span><span>Prev. Fim: {d_fim}</span>
-                    </div>
-                    <hr style="border-top: 1px solid #333; margin: 15px 0 10px 0;">
-                </div>
-                """
-                st.markdown(html_loc, unsafe_allow_html=True)
+            total_mensal = df_l["valor_mensal"].sum()
+            qtd_equip = df_l.shape[0]
             
-                c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
+            st.markdown(textwrap.dedent(f"""
+            <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; padding: 20px; margin-botton:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Resumo Locações'}</h4>
+                    <div style="text-align:right;">
+                        <div style="font-size: 0.9em; color: #ccc;">VALOR TOTAL MENSAL ESTIMADO</div>
+                        <div style="font-size: 1.4em; font-weight:bold;">R$ {total_mensal:,.2f}</div>
+                    </div>
+                </div>
+                 <div><b>{qtd_equip}</b> equipamento(s) locado(s)</div>
+            </div>"""), unsafe_allow_html=True)
+
+            for index, row in df_l.iterrows():
+                with st.container(border=False):
+                    d_inicio = pd.to_datetime(row['data_inicio']).strftime('%d/%m/%Y') if pd.notnull(row['data_inicio']) else '-'
+                    d_fim = pd.to_datetime(row['data_previsao_fim']).strftime('%d/%m/%Y') if pd.notnull(row['data_previsao_fim']) else '-'
+                    valor_loc_fmt = f"R$ {row['valor_mensal']:,.2f}"
+                    equip_safe = str(row['equipamento']).replace('"', '&quot;')
+                    
+                    st_loc = str(row['status'])
+                    if st_loc == "ATIVO":
+                        cor_loc = "#35BE53" 
+                    elif st_loc in ["MANUTENÇÃO"]:
+                        cor_loc = "#ffc107" 
+                    else:
+                        cor_loc = "#dc3545" 
+                    bg_loc = f"{cor_loc}22"
+                    st.header("", divider="orange")
+
+                    html_loc = f"""
+                    <div style="margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div>
+                                <h3 style="margin:0; color: white; font-size: 1.3em;">{equip_safe}</h3>
+                                <span style="color: #888; font-size: 0.9em;">{row['contrato_sienge']}</span>
+                            </div>
+                            <span style="background-color: {bg_loc}; color: {cor_loc}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_loc}; font-weight: bold;">{st_loc}</span>
+                        </div>
+                        <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
+                            <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
+                            <div style="min-width: 80px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
+                            <div style="min-width: 140px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row['responsavel']}</div>
+                            <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_loc_fmt}</span></div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
+                            <span>Início: {d_inicio}</span><span>Prev. Fim: {d_fim}</span>
+                        </div>
+                        <hr style="border-top: 1px solid #333; margin: 15px 0 10px 0;">
+                    </div>
+                    """
+                    st.markdown(html_loc, unsafe_allow_html=True)
                 
-                with c_btn1:
-                    if st.button("Atualizar Status", key=f"btn_update_{row['id']}" , type="primary", use_container_width=True):
-                        modal_atualizar_status(
-                            id_equipamento=row['id'],
-                            nome_equipamento=row['equipamento'],
-                            status_atual=row['status'],
-                            responsavel_atual=row['responsavel']
-                        )
-                            
-                
-                with c_btn2:
-                    if st.button("Excluir Registro", key=f"btn_del_{row['id']}", type="primary", use_container_width=True):
-                        conn.table("locacoes").delete().eq("id", row['id']).execute()
-                        st.cache_data.clear()
-                        st.rerun()
+                    c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
+                    
+                    with c_btn1:
+                        if st.button("Atualizar Status", key=f"btn_update_{row['id']}" , type="primary", use_container_width=True):
+                            modal_atualizar_status(
+                                id_equipamento=row['id'],
+                                nome_equipamento=row['equipamento'],
+                                status_atual=row['status'],
+                                responsavel_atual=row['responsavel']
+                            )
+                    
+                    with c_btn2:
+                        if st.button("Excluir Registro", key=f"btn_del_{row['id']}", type="primary", use_container_width=True):
+                            conn.table("locacoes").delete().eq("id", row['id']).execute()
+                            st.cache_data.clear()
+                            st.rerun()
                 
     
                 
