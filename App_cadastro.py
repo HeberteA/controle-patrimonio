@@ -887,7 +887,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                         if row[NF_LINK_COL]:
                             st.link_button("Nota Fiscal", row[NF_LINK_COL], type="primary", use_container_width=True)
                         else:
-                            st.button("Sem Nota", disabled=True, key=f"nf_{row[ID_COL]}", type="secundary", use_container_width=True)
+                            st.button("Sem Nota", disabled=True, key=f"nf_{row[ID_COL]}", type="secondary", use_container_width=True)
                     with c_qr:
                         if st.button("Etiqueta QR", key=f"qr_{row[ID_COL]}", type="primary", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
@@ -971,7 +971,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     c_edt, c_del = st.columns([1, 1])
                 with c_edt:
                     if st.button("Editar Locação", key=f"ed_l_{row['id']}", type="primary", use_container_width=True):
-                        modal_editar_locacao(row, lista_obras_app)
+                        modal_editar_locacao(row, lista_obras)
                 with c_del:
                     if st.button("Excluir", key=f"dl_l_{row['id']}", type="secondary", use_container_width=True):
                         if st.session_state.get(f"cf_l_{row['id']}"):
@@ -1133,7 +1133,7 @@ def app_principal():
         nome_da_obra_para_relatorio = obra_logada
         dados_patrimonio = existing_data_full[existing_data_full[OBRA_COL] == obra_logada].copy()
         dados_locacoes_filt = df_locacoes[df_locacoes["obra_destino"] == obra_logada].copy()
-
+        
     with st.sidebar:
         st.write("---")
         st.header("Exportação Rápida")
@@ -1147,7 +1147,7 @@ def app_principal():
         pagina_dashboard(dados_patrimonio, df_movimentacoes)
         
     elif selected_page == "Cadastrar Item":
-        pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, dados_patrimonio)
+        pagina_cadastrar_item(is_admin, lista_status, lista_obras, dados_patrimonio)
         
     elif selected_page == "Consulta Geral":
         pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes_filt, lista_status)
