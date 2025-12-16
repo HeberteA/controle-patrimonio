@@ -303,6 +303,18 @@ def gerar_ficha_qr_code(row_series):
         st.error(f"Erro ao gerar Ficha QR: {e}")
         return None
 
+def atualizar_status_db(id_item, novo_status, novo_responsavel):
+    try:
+        response = supabase.table("locacoes").update({
+            "status": novo_status,             
+            "responsavel": novo_responsavel,   
+        }).eq("id", id_item).execute() 
+        
+        return True
+    except Exception as e:
+        st.error(f"Erro ao atualizar banco: {e}")
+        return False
+        
 @st.dialog("Atualizar Status")
 def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
@@ -331,9 +343,14 @@ def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, respo
 
     with col_salvar:
         if st.button("Salvar", type="primary", use_container_width=True):
-            st.success("Atualizado!")
-            time.sleep(0.5)
-            st.rerun()
+            sucesso = atualizar_status_db(id_equipamento, novo_status, novo_responsavel)
+            if sucesso:
+                st.success("Status atualizado no banco!")
+                time.sleep(1)
+                st.cache_data.clear() 
+                st.rerun()
+            else:
+                st.error("Falha ao salvar. Verifique a conexão.")
         
 def tela_de_login():
     col1, col2, col3 = st.columns([1, 2, 1])
