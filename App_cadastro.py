@@ -318,7 +318,7 @@ def atualizar_status_db(id_item, novo_status, novo_responsavel):
 @st.dialog("Atualizar Status")
 def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
     st.write(f"Equipamento: **{nome_equipamento}**")
-    opcoes_status = ["ATIVO", "MANUNTENÇÃO", "DEVOLVIDO"]
+    opcoes_status = ["ATIVO", "MANUTENÇÃO", "DEVOLVIDO"]
     
     try:
         index_atual = opcoes_status.index(status_atual)
