@@ -315,43 +315,112 @@ def atualizar_status_db(id_item, novo_status, novo_responsavel):
         st.error(f"Erro ao atualizar banco: {e}")
         return False
         
-@st.dialog("Atualizar Status")
-def modal_atualizar_status(id_equipamento, nome_equipamento, status_atual, responsavel_atual):
-    st.write(f"Equipamento: **{nome_equipamento}**")
-    opcoes_status = ["ATIVO", "MANUTENÇÃO", "DEVOLVIDO"]
+@st.dialog("Editar Patrimônio")
+def modal_editar_patrimonio(item_series, lista_status):
+    st.write(f"Editando: **{item_series[NOME_COL]}**")
     
-    try:
-        index_atual = opcoes_status.index(status_atual)
-    except ValueError:
-        index_atual = 0
-
-    novo_status = st.selectbox(
-        "Novo Status:",
-        opcoes_status,
-        index=index_atual
-    )
-    
-    novo_responsavel = st.text_input("Responsável:", value=responsavel_atual)
-
-    st.write("") 
-
-    col_cancelar, col_salvar = st.columns([1, 1])
-
-    with col_cancelar:
-        if st.button("Cancelar", use_container_width=True):
-            st.rerun()
-
-    with col_salvar:
-        if st.button("Salvar", type="primary", use_container_width=True):
-            sucesso = atualizar_status_db(id_equipamento, novo_status, novo_responsavel)
-            if sucesso:
-                st.success("Salvo!")
-                st.session_state["aba_interna_ativa"] = 1
-                st.cache_data.clear() 
-                st.rerun()
-            else:
-                st.error("Falha ao salvar. Verifique a conexão.")
+    with st.form("form_edit_patr_modal"):
+        c1, c2 = st.columns(2)
+        with c1:
+            novo_nome = st.text_input("Nome", value=item_series[NOME_COL])
+            novo_tombamento = st.text_input("Tombamento", value=item_series[TOMBAMENTO_COL])
+            novo_valor = st.number_input("Valor (R$)", value=float(item_series[VALOR_COL]) if item_series[VALOR_COL] else 0.0, format="%.2f")
+        with c2:
+            idx_status = lista_status.index(item_series[STATUS_COL]) if item_series[STATUS_COL] in lista_status else 0
+            novo_status = st.selectbox("Status", options=lista_status, index=idx_status)
+            novo_local = st.text_input("Local", value=item_series[LOCAL_COL])
+            novo_resp = st.text_input("Responsável", value=item_series[RESPONSAVEL_COL])
+            
+        nova_nf = st.text_input("Nota Fiscal (N°)", value=item_series[NF_NUM_COL])
+        novas_specs = st.text_area("Especificações", value=item_series[ESPEC_COL])
+        novas_obs = st.text_area("Observações", value=item_series[OBS_COL])
         
+        if st.form_submit_button("Salvar Alterações", type="primary"):
+            try:
+                conn.table("patrimonio").update({
+                    NOME_COL: novo_nome,
+                    TOMBAMENTO_COL: novo_tombamento,
+                    VALOR_COL: novo_valor,
+                    STATUS_COL: novo_status,
+                    LOCAL_COL: novo_local,
+                    RESPONSAVEL_COL: novo_resp,
+                    NF_NUM_COL: nova_nf,
+                    ESPEC_COL: novas_specs,
+                    OBS_COL: novas_obs
+                }).eq(ID_COL, int(item_series[ID_COL])).execute()
+                
+                st.success("Patrimônio atualizado com sucesso!")
+                time.sleep(1)
+                st.cache_data.clear()
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao atualizar: {e}")
+
+@st.dialog("Editar Locação")
+def modal_editar_locacao(row, lista_obras):
+    st.write(f"Gerenciando Locação: **{row['equipamento']}**")
+    
+    def parse_date(date_str):
+        if not date_str or pd.isna(date_str): return None
+        try: return pd.to_datetime(date_str).date()
+        except: return None
+
+    dt_inicio_val = parse_date(row['data_inicio'])
+    dt_fim_val = parse_date(row['data_previsao_fim'])
+
+    with st.form("form_edit_loc_modal"):
+        l1, l2 = st.columns(2)
+        with l1:
+            n_equip = st.text_input("Equipamento", value=row['equipamento'])
+            n_contrato = st.text_input("Contrato Sienge", value=row['contrato_sienge'])
+            n_valor = st.number_input("Valor Mensal", value=float(row['valor_mensal']) if row['valor_mensal'] else 0.0, format="%.2f")
+        with l2:
+            n_resp = st.text_input("Responsável", value=row['responsavel'])
+            opcoes_status_loc = ["ATIVO", "MANUTENÇÃO", "DEVOLVIDO"]
+            idx_st_loc = opcoes_status_loc.index(row['status']) if row['status'] in opcoes_status_loc else 0
+            n_status = st.selectbox("Status", opcoes_status_loc, index=idx_st_loc)
+            
+            idx_obra = lista_obras.index(row['obra_destino']) if row['obra_destino'] in lista_obras else 0
+            n_obra = st.selectbox("Obra Destino", options=lista_obras, index=idx_obra)
+
+        d1, d2 = st.columns(2)
+        with d1:
+            n_inicio = st.date_input("Início", value=dt_inicio_val)
+        with d2:
+            n_fim = st.date_input("Previsão Fim", value=dt_fim_val)
+        
+        st.write("---")
+        col_save, col_del = st.columns([2, 1])
+        
+        with col_save:
+            if st.form_submit_button("Salvar Edição", type="primary", use_container_width=True):
+                try:
+                    conn.table("locacoes").update({
+                        "equipamento": n_equip,
+                        "contrato_sienge": n_contrato,
+                        "valor_mensal": n_valor,
+                        "responsavel": n_resp,
+                        "status": n_status,
+                        "obra_destino": n_obra,
+                        "data_inicio": n_inicio.isoformat() if n_inicio else None,
+                        "data_previsao_fim": n_fim.isoformat() if n_fim else None
+                    }).eq("id", int(row['id'])).execute()
+                    st.success("Locação salva!")
+                    time.sleep(1)
+                    st.cache_data.clear()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao salvar: {e}")
+
+        with col_del:
+            if st.checkbox("Confirmar Exclusão?"):
+                if st.form_submit_button("Excluir Definitivamente", type="secondary", use_container_width=True):
+                    conn.table("locacoes").delete().eq("id", row['id']).execute()
+                    st.warning("Locação removida.")
+                    time.sleep(1)
+                    st.cache_data.clear()
+                    st.rerun()
+                    
 def tela_de_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -809,22 +878,238 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     """
                     st.markdown(html_content, unsafe_allow_html=True)
                     
-                    c_vazio, c_btn_nf, c_btn_qr = st.columns([4, 1.5, 1.5])
+                    Entendido. Sem enrolação. Vamos aplicar as mudanças nas DUAS telas:
+
+Consulta Geral: Vai ter os botões de editar nos cards.
+
+Gerenciar Itens: Vai ter a tabela, a nova aba de locações e também usará os novos pop-ups de edição.
+
+Aqui está o código completo das partes modificadas. Copie e substitua na ordem abaixo.
+
+1. Primeiro: Adicione as Funções de Janela (Dialogs)
+Cole isso antes de qualquer função de página (pode ser logo depois de carregar_dados_app). Elas serão usadas pelas duas páginas.
+
+Python
+
+@st.dialog("Editar Patrimônio")
+def modal_editar_patrimonio(item_series, lista_status):
+    st.write(f"Editando: **{item_series[NOME_COL]}**")
+    
+    with st.form("form_edit_patr_modal"):
+        c1, c2 = st.columns(2)
+        with c1:
+            novo_nome = st.text_input("Nome", value=item_series[NOME_COL])
+            novo_tombamento = st.text_input("Tombamento", value=item_series[TOMBAMENTO_COL])
+            novo_valor = st.number_input("Valor (R$)", value=float(item_series[VALOR_COL]) if item_series[VALOR_COL] else 0.0, format="%.2f")
+        with c2:
+            idx_status = lista_status.index(item_series[STATUS_COL]) if item_series[STATUS_COL] in lista_status else 0
+            novo_status = st.selectbox("Status", options=lista_status, index=idx_status)
+            novo_local = st.text_input("Local", value=item_series[LOCAL_COL])
+            novo_resp = st.text_input("Responsável", value=item_series[RESPONSAVEL_COL])
+            
+        nova_nf = st.text_input("Nota Fiscal (N°)", value=item_series[NF_NUM_COL])
+        novas_specs = st.text_area("Especificações", value=item_series[ESPEC_COL])
+        novas_obs = st.text_area("Observações", value=item_series[OBS_COL])
+        
+        if st.form_submit_button("💾 Salvar Alterações", type="primary"):
+            try:
+                conn.table("patrimonio").update({
+                    NOME_COL: novo_nome,
+                    TOMBAMENTO_COL: novo_tombamento,
+                    VALOR_COL: novo_valor,
+                    STATUS_COL: novo_status,
+                    LOCAL_COL: novo_local,
+                    RESPONSAVEL_COL: novo_resp,
+                    NF_NUM_COL: nova_nf,
+                    ESPEC_COL: novas_specs,
+                    OBS_COL: novas_obs
+                }).eq(ID_COL, int(item_series[ID_COL])).execute()
+                
+                st.success("Patrimônio atualizado!")
+                time.sleep(1)
+                st.cache_data.clear()
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao atualizar: {e}")
+
+@st.dialog("Editar Locação")
+def modal_editar_locacao(row, lista_obras):
+    st.write(f"Gerenciando Locação: **{row['equipamento']}**")
+    
+    # Prepara datas
+    def parse_date(date_str):
+        if not date_str or pd.isna(date_str): return None
+        try: return pd.to_datetime(date_str).date()
+        except: return None
+
+    dt_inicio_val = parse_date(row['data_inicio'])
+    dt_fim_val = parse_date(row['data_previsao_fim'])
+
+    with st.form("form_edit_loc_modal"):
+        l1, l2 = st.columns(2)
+        with l1:
+            n_equip = st.text_input("Equipamento", value=row['equipamento'])
+            n_contrato = st.text_input("Contrato Sienge", value=row['contrato_sienge'])
+            n_valor = st.number_input("Valor Mensal", value=float(row['valor_mensal']) if row['valor_mensal'] else 0.0, format="%.2f")
+        with l2:
+            n_resp = st.text_input("Responsável", value=row['responsavel'])
+            opcoes_status_loc = ["ATIVO", "MANUTENÇÃO", "DEVOLVIDO"]
+            idx_st_loc = opcoes_status_loc.index(row['status']) if row['status'] in opcoes_status_loc else 0
+            n_status = st.selectbox("Status", opcoes_status_loc, index=idx_st_loc)
+            
+            # Se a obra destino estiver na lista, seleciona, senão pega o primeiro
+            idx_obra = lista_obras.index(row['obra_destino']) if row['obra_destino'] in lista_obras else 0
+            n_obra = st.selectbox("Obra Destino", options=lista_obras, index=idx_obra)
+
+        d1, d2 = st.columns(2)
+        with d1:
+            n_inicio = st.date_input("Início", value=dt_inicio_val)
+        with d2:
+            n_fim = st.date_input("Previsão Fim", value=dt_fim_val)
+        
+        st.write("---")
+        if st.form_submit_button("💾 Salvar Edição", type="primary", use_container_width=True):
+            try:
+                conn.table("locacoes").update({
+                    "equipamento": n_equip,
+                    "contrato_sienge": n_contrato,
+                    "valor_mensal": n_valor,
+                    "responsavel": n_resp,
+                    "status": n_status,
+                    "obra_destino": n_obra,
+                    "data_inicio": n_inicio.isoformat() if n_inicio else None,
+                    "data_previsao_fim": n_fim.isoformat() if n_fim else None
+                }).eq("id", int(row['id'])).execute()
+                st.success("Locação salva!")
+                time.sleep(1)
+                st.cache_data.clear()
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao salvar: {e}")
+2. Segundo: Atualize o Login (Com Email)
+Substitua a tela_de_login:
+
+Python
+
+def tela_de_login():
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("Lavie.png", use_container_width=True) 
+    st.title("Controle de Patrimônio")
+
+    tab1, tab2 = st.tabs(["Acesso por Obra", "Acesso de Administrador"])
+
+    with tab1:
+        st.subheader("Login da Obra")
+        try:
+            _, lista_obras, _, _, _ = carregar_dados_app()
+            if not lista_obras:
+                st.info("Nenhuma obra cadastrada.")
+                return
+
+            codigos_obras = st.secrets.obra_codes
+            obra_selecionada = st.selectbox("Selecione a Obra", options=lista_obras, index=None)
+            if obra_selecionada:
+                codigo_acesso = st.text_input("Código de Acesso", type="password", key="obra_pass")
+                if st.button("Entrar na Obra", type="primary"):
+                    if codigo_acesso == codigos_obras.get(obra_selecionada):
+                        st.session_state.logged_in = True
+                        st.session_state.is_admin = False
+                        st.session_state.selected_obra = obra_selecionada
+                        st.session_state.user_email = f"Obra: {obra_selecionada}"
+                        st.rerun()
+                    else:
+                        st.error("Código incorreto.")
+        except Exception as e:
+            st.error(f"Erro ao carregar obras: {e}")
+
+    with tab2:
+        st.subheader("Login de Administrador")
+        # --- AQUI O EMAIL NOVO ---
+        email_admin = st.text_input("E-mail do Responsável", placeholder="ex: nome@lavie.com.br")
+        admin_password = st.text_input("Senha do Administrador", type="password", key="admin_pass")
+        
+        if st.button("Entrar como Admin", type="primary"):
+            if admin_password == st.secrets.admin.password:
+                st.session_state.logged_in = True
+                st.session_state.is_admin = True
+                st.session_state.user_email = email_admin if email_admin else "Admin Geral"
+                st.rerun()
+            else:
+                st.error("Senha incorreta.")
+3. Terceiro: Atualize a Consulta Geral (pagina_itens_cadastrados)
+Ela agora tem os botões de edição nos cards e a lógica atualizada na aba de locações.
+
+Python
+
+def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_status):
+    st.header("Consulta e Relatórios", divider="orange")
+    
+    st.markdown("""
+    <style>
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #1E1E1E; border: 1px solid #333; border-radius: 10px; padding: 15px; margin-bottom: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Pega lista de obras para o modal de locação
+    _, lista_obras_app, _, _, _ = carregar_dados_app()
+    
+    tab_vis_patrimonio, tab_vis_locacao = st.tabs(["Patrimônio", "Locações Ativas"])
+
+    # --- ABA PATRIMÔNIO (CARDS) ---
+    with tab_vis_patrimonio:
+        if dados_patrimonio.empty:
+            st.info("Nenhum patrimônio cadastrado.")
+        else:
+            search_term = st.text_input("Buscar Patrimônio", placeholder="Nome, Tombamento...")
+            
+            dados_filt = dados_patrimonio.copy()
+            if search_term:
+                dados_filt = dados_filt[
+                    dados_filt[NOME_COL].str.contains(search_term, case=False, na=False) |
+                    dados_filt[TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False)
+                ]
+
+            st.markdown(f"**{len(dados_filt)}** itens encontrados.")
+
+            for index, row in dados_filt.iterrows():
+                with st.container(border=True):
+                    st_txt = str(row[STATUS_COL]).strip().upper()
+                    cor_status = "#35BE53" if st_txt == "ATIVO" else "#ffc107" if st_txt == "MANUTENÇÃO" else "#dc3545"
                     
-                    with c_btn_nf:
+                    st.markdown(f"""
+                    <div style="display:flex; justify-content:space-between;">
+                        <h3 style="margin:0; color:white;">{row[NOME_COL]}</h3>
+                        <span style="color:{cor_status}; font-weight:bold; border:1px solid {cor_status}; padding:2px 8px; border-radius:4px;">{st_txt}</span>
+                    </div>
+                    <div style="color:#E37026; font-weight:bold; margin-bottom:10px;">TOMBAMENTO: {row[TOMBAMENTO_COL]}</div>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; color:#BBB; font-size:0.9em; margin-bottom:15px;">
+                        <span><b>Obra:</b> {row[OBRA_COL]}</span>
+                        <span><b>Local:</b> {row[LOCAL_COL]}</span>
+                        <span><b>Resp:</b> {row[RESPONSAVEL_COL]}</span>
+                        <span style="color:#4cd137;"><b>R$ {row[VALOR_COL]:,.2f}</b></span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    c_edit, c_nf, c_qr = st.columns(3)
+                    with c_edit:
+                        if st.button("Editar", key=f"ed_p_{row[ID_COL]}", type="primary", use_container_width=True):
+                            modal_editar_patrimonio(row, lista_status)
+                    with c_nf:
                         if row[NF_LINK_COL]:
                             st.link_button("Nota Fiscal", row[NF_LINK_COL], type="primary", use_container_width=True)
                         else:
-                            st.button("Sem Nota", disabled=True, key=f"btn_nf_{row[ID_COL]}", type="secondary", use_container_width=True)
-
-                    with c_btn_qr:
-                        if st.button("Etiqueta QR", key=f"btn_qr_{row[ID_COL]}", type="primary", use_container_width=True):
+                            st.button("Sem Nota", disabled=True, key=f"nf_{row[ID_COL]}", type="secundary", use_container_width=True)
+                    with c_qr:
+                        if st.button("Etiqueta QR", key=f"qr_{row[ID_COL]}", type="primary", use_container_width=True):
                             pdf_bytes = gerar_ficha_qr_code(row)
                             if pdf_bytes:
                                 b64 = base64.b64encode(pdf_bytes).decode()
-                                href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="display:none;" id="dl_link_{row[ID_COL]}">Download</a><script>document.getElementById("dl_link_{row[ID_COL]}").click();</script>'
-                                st.markdown(f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" style="color:#E37026; text-decoration:none; font-weight:bold; display:block; text-align:center;">⬇️ Baixar PDF</a>', unsafe_allow_html=True)
-
+                                href = f'<a href="data:application/pdf;base64,{b64}" download="Etiqueta_{row[TOMBAMENTO_COL]}.pdf" id="d_{row[ID_COL]}"></a><script>document.getElementById("d_{row[ID_COL]}").click();</script>'
+                                st.markdown(href, unsafe_allow_html=True)
+                                
     elif aba_selecionada == "Locações Ativas":
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -897,206 +1182,118 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
                     """
                     st.markdown(html_loc, unsafe_allow_html=True)
                 
-                    c_vaz, c_btn1, c_btn2 = st.columns([5, 2.5, 2.5])
-                    
-                    with c_btn1:
-                        if st.button("Atualizar Status", key=f"btn_update_{row['id']}" , type="primary", use_container_width=True):
-                            modal_atualizar_status(
-                                id_equipamento=row['id'],
-                                nome_equipamento=row['equipamento'],
-                                status_atual=row['status'],
-                                responsavel_atual=row['responsavel']
-                            )
-                    
-                    with c_btn2:
-                        if st.button("Excluir Registro", key=f"btn_del_{row['id']}", type="primary", use_container_width=True):
+                    c_edt, c_del = st.columns([1, 1])
+                with c_edt:
+                    if st.button("Editar Locação", key=f"ed_l_{row['id']}", type="primary", use_container_width=True):
+                        modal_editar_locacao(row, lista_obras_app)
+                with c_del:
+                    if st.button("Excluir", key=f"dl_l_{row['id']}", type="secondary", use_container_width=True):
+                        if st.session_state.get(f"cf_l_{row['id']}"):
                             conn.table("locacoes").delete().eq("id", row['id']).execute()
-                            st.cache_data.clear()
                             st.rerun()
+                        else:
+                            st.session_state[f"cf_l_{row['id']}"] = True
+                            st.warning("Confirmar?")
                 
     
                 
 def pagina_gerenciar_itens(dados_da_obra, existing_data_full, df_movimentacoes, lista_status):
-    st.header("Gerenciar Itens Cadastrados", divider='rainbow')
-
-    if dados_da_obra.empty:
-        st.info("Nenhum item cadastrado para a obra selecionada ainda.")
-        return
-
-    dados_filtrados_gerenciar = dados_da_obra.copy()
+    st.header("Gerenciamento Avançado", divider='rainbow')
     
-    with st.expander("Filtros", expanded=True):
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            status_unicos_ger = ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique()))
-            filtro_status_ger = st.selectbox("Filtrar por Status", status_unicos_ger, key="filter_status_ger")
-            if filtro_status_ger != "Todos":
-                dados_filtrados_gerenciar = dados_filtrados_gerenciar[dados_filtrados_gerenciar[STATUS_COL] == filtro_status_ger]
-        
-        with col_f2:
-            search_term_ger = st.text_input("Buscar por Nome, Tombamento ou Responsável", key="filter_search_ger")
-            if search_term_ger:
-                dados_filtrados_gerenciar = dados_filtrados_gerenciar[
-                    dados_filtrados_gerenciar[NOME_COL].str.contains(search_term_ger, case=False, na=False) |
-                    dados_filtrados_gerenciar[TOMBAMENTO_COL].astype(str).str.contains(search_term_ger, case=False, na=False) |
-                    dados_filtrados_gerenciar[RESPONSAVEL_COL].str.contains(search_term_ger, case=False, na=False)
-                ]
-    
-    st.dataframe(dados_filtrados_gerenciar, use_container_width=True, hide_index=True, height=500)
-    st.write("---")
- 
-    lista_itens = [f"{row[TOMBAMENTO_COL]} - {row[NOME_COL]} (ID: {row[ID_COL]})" for _, row in dados_filtrados_gerenciar.iterrows()]
-    item_selecionado_gerenciar = st.selectbox("Selecione um item para Gerenciar", options=lista_itens, index=None, placeholder="Escolha um item...")
+    _, lista_obras_app, _, df_locacoes_full, _ = carregar_dados_app()
 
-    if item_selecionado_gerenciar:
-        item_id_selecionado = int(item_selecionado_gerenciar.split("(ID: ")[1].replace(")", ""))
-        
-        item_data_series_list = dados_filtrados_gerenciar[dados_filtrados_gerenciar[ID_COL] == item_id_selecionado]
-        
-        if item_data_series_list.empty:
-            st.error("Item não encontrado. Por favor, atualize a página.")
-            return
-            
-        item_data_series = item_data_series_list.iloc[0]
-        tombamento_selecionado = item_data_series[TOMBAMENTO_COL]
-        obra_do_item = item_data_series[OBRA_COL]
-        
-        if not st.session_state.get('confirm_delete'):
-            col_mov, col_edit, col_delete = st.columns(3)
-            
-            if col_mov.button("Registrar Entrada/Saída",type="primary", use_container_width=True):
-                st.session_state.movement_item_id = item_id_selecionado
-                st.session_state.edit_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
+    if not st.session_state.is_admin:
+        df_locacoes_full = df_locacoes_full[df_locacoes_full['obra_destino'] == st.session_state.selected_obra]
 
-            if col_edit.button("Editar Item", type="primary", use_container_width=True):
-                st.session_state.edit_item_id = item_id_selecionado
-                st.session_state.movement_item_id = None
-                st.session_state.confirm_delete = False
-                st.rerun()
+    tab_ger_patr, tab_ger_loc = st.tabs(["Gerenciar Patrimônio", "Gerenciar Locações"])
+
+    with tab_ger_patr:
+        if dados_da_obra.empty:
+            st.info("Sem itens.")
         else:
-            col_delete = st.container() 
-
-        if col_delete.button("Remover Item", type="primary", use_container_width=True):
-            st.session_state.edit_item_id = item_id_selecionado
-            st.session_state.confirm_delete = True
-            st.session_state.movement_item_id = None
-            st.rerun()
-
-        if st.session_state.confirm_delete and st.session_state.edit_item_id == item_id_selecionado:
-            st.warning(f"**Atenção!** Tem certeza que deseja remover permanentemente o item **{tombamento_selecionado}** da obra **{obra_do_item}**?")
-            c1_del, c2_del = st.columns(2)
+            c1, c2 = st.columns(2)
+            with c1: filter_st = st.selectbox("Status", ["Todos"] + sorted(list(dados_da_obra[STATUS_COL].unique())))
+            with c2: search_g = st.text_input("Buscar Item", key="search_ger")
             
-            if c1_del.button("Sim, tenho certeza e quero remover", use_container_width=True, type="primary"):
-                try:
-                    conn.table("patrimonio").delete().eq(ID_COL, item_id_selecionado).execute()
-                    st.success(f"Item {tombamento_selecionado} da obra {obra_do_item} removido!")
-                    st.session_state.confirm_delete = False
-                    st.session_state.edit_item_id = None
-                    st.cache_data.clear()
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao remover item: {e}")
-
-            if c2_del.button("Cancelar", use_container_width=True):
-                st.session_state.confirm_delete = False
-                st.session_state.edit_item_id = None
-                st.rerun()
-        
-        if st.session_state.movement_item_id == item_id_selecionado:
-            with st.form("movement_form"):
-                st.subheader(f"Registrar Movimentação para: {item_selecionado_gerenciar}")
-                tipo_mov = st.radio("Tipo de Movimentação", ["Entrada", "Saída"], horizontal=True)
-                responsavel_mov = st.text_input("Responsável pela Movimentação*")
-                obs_mov = st.text_area("Observações da Movimentação")
-                submitted_mov = st.form_submit_button("Registrar Movimentação")
+            df_v = dados_da_obra.copy()
+            if filter_st != "Todos": df_v = df_v[df_v[STATUS_COL] == filter_st]
+            if search_g: df_v = df_v[df_v[NOME_COL].str.contains(search_g, case=False, na=False)]
             
-                if submitted_mov:
-                    if not responsavel_mov:
-                        st.warning("O campo 'Responsável pela Movimentação' é obrigatório.")
-                    else:
-                        nova_movimentacao = {
-                            OBRA_COL: obra_do_item,
-                            TOMBAMENTO_COL: tombamento_selecionado,
-                            "tipo_movimentacao": tipo_mov,
-                            "data_hora": datetime.now().isoformat(),
-                            "responsavel_movimentacao": responsavel_mov,
-                            OBS_COL: obs_mov
-                        }
-                        novo_status = "Disponível" if tipo_mov == "Entrada" else "Em Uso Externo"
-                        
-                        try:
-                            conn.table("movimentacoes").insert(nova_movimentacao).execute()
-                            conn.table("patrimonio").update({STATUS_COL: novo_status}).eq(ID_COL, item_id_selecionado).execute()
-                            st.success("Movimentação registrada com sucesso!")
+            st.dataframe(df_v[[TOMBAMENTO_COL, NOME_COL, STATUS_COL, RESPONSAVEL_COL]], use_container_width=True, hide_index=True)
+            
+            st.write("---")
+            st.subheader("Ações")
+            
+            opts = df_v.apply(lambda x: f"{x[TOMBAMENTO_COL]} - {x[NOME_COL]}", axis=1).tolist()
+            sel_item = st.selectbox("Selecione o Item para Editar/Movimentar:", options=opts, index=None)
+            
+            if sel_item:
+                tomb = sel_item.split(" - ")[0]
+                row_sel = df_v[df_v[TOMBAMENTO_COL].astype(str) == tomb].iloc[0]
+                
+                b1, b2, b3 = st.columns(3)
+                with b1:
+                    if st.button("Editar Dados", use_container_width=True, type="primary"):
+                        modal_editar_patrimonio(row_sel, lista_status)
+                with b2:
+                    if st.button("Movimentar", use_container_width=True):
+                        st.session_state.movement_item_id = row_sel[ID_COL]
+                        st.rerun()
+                with b3:
+                    if st.button("Remover", use_container_width=True, type="secondary"):
+                         conn.table("patrimonio").delete().eq(ID_COL, int(row_sel[ID_COL])).execute()
+                         st.success("Removido.")
+                         time.sleep(1)
+                         st.cache_data.clear()
+                         st.rerun()
+
+                if st.session_state.movement_item_id == row_sel[ID_COL]:
+                    with st.container(border=True):
+                        st.write(f"Movimentando: {row_sel[NOME_COL]}")
+                        tipo = st.radio("Tipo", ["Entrada", "Saída"], horizontal=True)
+                        resp = st.text_input("Responsável Mov.")
+                        obs = st.text_area("Obs Mov.")
+                        if st.button("Confirmar"):
+                            conn.table("movimentacoes").insert({
+                                OBRA_COL: row_sel[OBRA_COL], TOMBAMENTO_COL: row_sel[TOMBAMENTO_COL],
+                                "tipo_movimentacao": tipo, "data_hora": datetime.now().isoformat(),
+                                "responsavel_movimentacao": resp, OBS_COL: obs
+                            }).execute()
+                            novo_st = "Disponível" if tipo == "Entrada" else "Em Uso Externo"
+                            conn.table("patrimonio").update({STATUS_COL: novo_st}).eq(ID_COL, int(row_sel[ID_COL])).execute()
+                            st.success("Movimentado!")
                             st.session_state.movement_item_id = None
-                            st.cache_data.clear()
                             st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao registrar movimentação: {e}")
-                        
-        if st.session_state.edit_item_id == item_id_selecionado and not st.session_state.confirm_delete:
-            with st.form("edit_form"):
-                st.subheader(f"Editando Item: {tombamento_selecionado} (Obra: {obra_do_item})")
-                
-                tomb_edit_novo = st.text_input(f"{TOMBAMENTO_COL}", value=item_data_series.get(TOMBAMENTO_COL, ""))
-                status_edit = st.selectbox(STATUS_COL, options=lista_status, index=lista_status.index(item_data_series.get(STATUS_COL)) if item_data_series.get(STATUS_COL) in lista_status else 0)
-                nome_edit = st.text_input(NOME_COL, value=item_data_series.get(NOME_COL, ""))
-                num_nota_fiscal_edit = st.text_input(f"{NF_NUM_COL}*", value=item_data_series.get(NF_NUM_COL, ""))
-                especificacoes_edit = st.text_area(ESPEC_COL, value=item_data_series.get(ESPEC_COL, ""))
-                observacoes_edit = st.text_area(OBS_COL, value=item_data_series.get(OBS_COL, ""))
-                local_edit = st.text_input(LOCAL_COL, value=item_data_series.get(LOCAL_COL, ""))
-                responsavel_edit = st.text_input(RESPONSAVEL_COL, value=item_data_series.get(RESPONSAVEL_COL, ""))
-                valor_edit = st.number_input(f"{VALOR_COL} (R$)", min_value=0.0, format="%.2f", value=float(item_data_series.get(VALOR_COL, 0)))
-                
-                submitted_edit = st.form_submit_button("Salvar Alterações")
-                
-                if submitted_edit:
-                    if not num_nota_fiscal_edit or not tomb_edit_novo:
-                        st.warning(f"Os campos '{TOMBAMENTO_COL}' e '{NF_NUM_COL}*' são obrigatórios.")
-                    else: 
-                        edit_input_limpo = tomb_edit_novo.strip()
-                        
-                        condicao_outro_item = (existing_data_full[OBRA_COL] == obra_do_item) & \
-                                              (existing_data_full[TOMBAMENTO_COL].astype(str).str.strip() == edit_input_limpo) & \
-                                              (existing_data_full[ID_COL] != item_id_selecionado)
-                        
-                        if not existing_data_full[condicao_outro_item].empty:
-                            st.error(f"Erro: O N° de Tombamento '{edit_input_limpo}' já existe para outro item nesta obra.")
-                        else:
-                            update_dict = {
-                                TOMBAMENTO_COL: edit_input_limpo,
-                                STATUS_COL: status_edit,
-                                NOME_COL: nome_edit,
-                                NF_NUM_COL: num_nota_fiscal_edit,
-                                ESPEC_COL: especificacoes_edit,
-                                OBS_COL: observacoes_edit,
-                                LOCAL_COL: local_edit,
-                                RESPONSAVEL_COL: responsavel_edit,
-                                VALOR_COL: valor_edit
-                            } 
-                            
-                            try:
-                                conn.table("patrimonio").update(update_dict).eq(ID_COL, item_id_selecionado).execute()
-                                st.success(f"Item {edit_input_limpo} atualizado com sucesso!")
-                                st.session_state.edit_item_id = None
-                                st.cache_data.clear()
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao atualizar item: {e}")
-            
-        st.write("---")
-        st.subheader(f"Histórico de Movimentações do Item: {tombamento_selecionado}")
-        historico_item = df_movimentacoes[
-            (df_movimentacoes[OBRA_COL] == obra_do_item) &
-            (df_movimentacoes[TOMBAMENTO_COL].astype(str) == str(tombamento_selecionado))
-        ].sort_values(by="data_hora", ascending=False)
-    
-        if not historico_item.empty:
-            st.dataframe(historico_item, hide_index=True, use_container_width=True, column_config={ID_COL: None})
+
+    with tab_ger_loc:
+        if df_locacoes_full.empty:
+            st.info("Sem locações.")
         else:
-            st.info("Nenhuma movimentação registrada para este item.")
+            search_l = st.text_input("Buscar Locação", key="search_ger_loc")
+            df_lv = df_locacoes_full.copy()
+            if search_l: df_lv = df_lv[df_lv["equipamento"].str.contains(search_l, case=False, na=False)]
+            
+            st.dataframe(df_lv[["equipamento", "obra_destino", "status", "valor_mensal"]], use_container_width=True, hide_index=True)
+            
+            st.write("---")
+            opts_l = df_lv.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
+            sel_loc = st.selectbox("Selecione Locação:", options=opts_l, index=None)
+            
+            if sel_loc:
+                lid = int(sel_loc.split(" - ")[0])
+                r_loc = df_lv[df_lv["id"] == lid].iloc[0]
+                
+                bl1, bl2 = st.columns(2)
+                with bl1:
+                    if st.button("Editar Locação", key="btn_g_el", type="primary", use_container_width=True):
+                        modal_editar_locacao(r_loc, lista_obras_app)
+                with bl2:
+                    if st.button("Excluir", key="btn_g_dl", type="secondary", use_container_width=True):
+                        conn.table("locacoes").delete().eq("id", lid).execute()
+                        st.success("Excluído.")
+                        time.sleep(1)
+                        st.cache_data.clear()
+                        st.rerun()
 
 def app_principal():
     is_admin = st.session_state.is_admin
