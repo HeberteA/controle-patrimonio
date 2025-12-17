@@ -119,7 +119,12 @@ def pagina_dashboard(df_patr, df_mov):
         return
 
     COR_PRINCIPAL = "#E37026"
-    COR_SECUNDARIA = "#1e1e1f"
+    LAYOUT_CLEAN = dict(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',   
+        font=dict(color="#FAFAFA"),     
+        margin=dict(t=30, l=10, r=10, b=10)
+    )
     
     dados_com_idade = df_patr.copy()
     idade_media_dias = None
@@ -127,22 +132,13 @@ def pagina_dashboard(df_patr, df_mov):
     if not df_mov.empty:
         df_mov['data_hora'] = pd.to_datetime(df_mov['data_hora'])
         entradas = df_mov[df_mov['tipo_movimentacao'] == 'Entrada']
-        
         if not entradas.empty:
             aquisicoes = entradas.groupby(db.TOMBAMENTO_COL)['data_hora'].min().reset_index()
             aquisicoes.rename(columns={'data_hora': 'data_aquisicao'}, inplace=True)
-            
-            dados_com_idade = pd.merge(
-                dados_com_idade, 
-                aquisicoes, 
-                on=db.TOMBAMENTO_COL, 
-                how='left'
-            )
-            
+            dados_com_idade = pd.merge(dados_com_idade, aquisicoes, on=db.TOMBAMENTO_COL, how='left')
             if 'data_aquisicao' in dados_com_idade.columns:
                 agora_utc = datetime.now(datetime.timezone.utc)
                 dados_com_idade['data_aquisicao'] = pd.to_datetime(dados_com_idade['data_aquisicao'], utc=True)
-                
                 dados_com_idade['idade_dias'] = (agora_utc - dados_com_idade['data_aquisicao']).dt.days
                 idade_media_dias = dados_com_idade['idade_dias'].mean()
 
@@ -151,24 +147,18 @@ def pagina_dashboard(df_patr, df_mov):
     valor_total = df_patr[db.VALOR_COL].sum()
     
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
-        st.metric("Total de Itens", f"{total_itens} un.")
-    with kpi2:
-        st.metric("Valor Patrimonial", f"R$ {valor_total:,.2f}")
-    with kpi3:
-        if idade_media_dias is not None:
-            st.metric("Idade Média", f"{idade_media_dias:,.0f} dias")
-        else:
-            st.metric("Idade Média", "N/A")
+    with kpi1: st.metric("Total de Itens", f"{total_itens} un.")
+    with kpi2: st.metric("Valor Patrimonial", f"R$ {valor_total:,.2f}")
+    with kpi3: st.metric("Idade Média", f"{idade_media_dias:,.0f} dias" if idade_media_dias else "N/A")
     with kpi4:
         df_manut = df_patr[df_patr[db.STATUS_COL] == 'MANUTENÇÃO']
         valor_manut = df_manut[db.VALOR_COL].sum()
         perc_manut = (valor_manut / valor_total) * 100 if valor_total > 0 else 0
-        st.metric("Capital em Manutenção", f"R$ {valor_manut:,.2f}", f"{perc_manut:.1f}% do Total", delta_color="inverse")
+        st.metric("Em Manutenção", f"R$ {valor_manut:,.2f}", f"{perc_manut:.1f}%", delta_color="inverse")
             
     st.write("---")
 
-    st.subheader("Estratégia e Priorização (Pareto & Status)")
+    st.subheader("Estratégia e Priorização")
     
     df_abc = df_patr.copy()
     df_abc = df_abc.sort_values(by=db.VALOR_COL, ascending=False)
@@ -176,18 +166,16 @@ def pagina_dashboard(df_patr, df_mov):
     df_abc['perc_acumulado'] = df_abc['valor_acumulado'] / df_abc[db.VALOR_COL].sum()
     
     def classificar_abc(perc):
-        if perc <= 0.8: return 'A (Crítico - 80% Valor)'
-        elif perc <= 0.95: return 'B (Intermediário - 15% Valor)'
-        else: return 'C (Baixo Impacto - 5% Valor)'
+        if perc <= 0.8: return 'A (Crítico - 80%)'
+        elif perc <= 0.95: return 'B (Médio - 15%)'
+        else: return 'C (Baixo - 5%)'
     
     df_abc['Classe ABC'] = df_abc['perc_acumulado'].apply(classificar_abc)
 
     col_intel1, col_intel2 = st.columns([1.5, 1])
 
     with col_intel1:
-        st.markdown("**Curva ABC: Onde está o dinheiro?**")
-        st.caption("Foco de Gestão: Itens Classe A representam 80% do capital investido.")
-        
+        st.markdown("**Curva ABC (Dispersão de Valor)**")
         fig_abc = px.strip(
             df_abc, 
             x=db.VALOR_COL, 
@@ -196,19 +184,18 @@ def pagina_dashboard(df_patr, df_mov):
             custom_data=[db.NOME_COL, db.RESPONSAVEL_COL],
             stripmode='overlay',
             color_discrete_map={
-                'A (Crítico - 80% Valor)': '#E37026', 
-                'B (Intermediário - 15% Valor)': '#F4A261',
-                'C (Baixo Impacto - 5% Valor)': '#2A9D8F'
+                'A (Crítico - 80%)': '#FF8C00', 
+                'B (Médio - 15%)': '#FFD700',  
+                'C (Baixo - 5%)': '#A9A9A9'    
             }
         )
-        fig_abc.update_traces(hovertemplate='<b>%{customdata[0]}</b><br>Valor: R$ %{x:,.2f}<br>Resp: %{customdata[1]}')
-        fig_abc.update_layout(xaxis_title="Valor Individual do Ativo (R$)", showlegend=False)
+        fig_abc.update_traces(hovertemplate='<b>%{customdata[0]}</b><br>Valor: R$ %{x:,.2f}')
+        fig_abc.update_layout(**LAYOUT_CLEAN) 
+        fig_abc.update_layout(xaxis_title="Valor (R$)", showlegend=False, xaxis=dict(showgrid=True, gridcolor='#333'))
         st.plotly_chart(fig_abc, use_container_width=True)
 
     with col_intel2:
-        st.markdown("**Mapa de Calor Financeiro (Treemap)**")
-        st.caption("Tamanho da caixa = Valor financeiro do item.")
-        
+        st.markdown("**Mapa Financeiro (Treemap)**")
         if not df_patr.empty:
             fig_tree = px.treemap(
                 df_patr, 
@@ -216,75 +203,55 @@ def pagina_dashboard(df_patr, df_mov):
                 values=db.VALOR_COL,
                 color=db.STATUS_COL,
                 color_discrete_map={
-                    'ATIVO': '#2ecc71',     
-                    'MANUTENÇÃO': '#e74c3c', 
-                    'EMPRÉSTIMO': '#f1c40f',
-                    'BAIXADO': '#95a5a6'     
+                    'ATIVO': '#2E8B57',      
+                    'MANUTENÇÃO': '#CD5C5C', 
+                    'EMPRÉSTIMO': '#DAA520', 
+                    'BAIXADO': '#696969'     
                 }
             )
-            fig_tree.update_traces(
-                textinfo="label+value+percent parent",
-                hovertemplate='<b>%{label}</b><br>Valor Total: R$ %{value:,.2f}'
-            )
+            fig_tree.update_traces(textinfo="label+value")
+            fig_tree.update_layout(**LAYOUT_CLEAN) 
             st.plotly_chart(fig_tree, use_container_width=True)
 
     st.write("---")
 
-    st.subheader("Linha do Tempo e Movimentações")
-    
+    st.subheader("Evolução")
     col_t1, col_t2 = st.columns(2)
     
     with col_t1:
-        st.markdown("**Evolução Patrimonial (Aquisições)**")
+        st.markdown("**Investimento Mensal (Aquisições)**")
         if 'data_aquisicao' in dados_com_idade.columns and not dados_com_idade['data_aquisicao'].isnull().all():
             aquisicoes_no_tempo = dados_com_idade.set_index('data_aquisicao').resample('ME')[db.VALOR_COL].sum().reset_index()
             aquisicoes_no_tempo = aquisicoes_no_tempo[aquisicoes_no_tempo[db.VALOR_COL] > 0]
             
-            fig_aquisicao = px.area(
-                aquisicoes_no_tempo, 
-                x='data_aquisicao', 
-                y=db.VALOR_COL, 
-                markers=True
-            )
-            fig_aquisicao.update_traces(line_color=COR_PRINCIPAL, fillcolor="rgba(227, 112, 38, 0.2)")
-            fig_aquisicao.update_layout(xaxis_title="Mês de Aquisição", yaxis_title="Investimento Realizado (R$)")
+            fig_aquisicao = px.area(aquisicoes_no_tempo, x='data_aquisicao', y=db.VALOR_COL)
+            fig_aquisicao.update_traces(line_color=COR_PRINCIPAL, fillcolor="rgba(227, 112, 38, 0.3)")
+            fig_aquisicao.update_layout(**LAYOUT_CLEAN) 
+            fig_aquisicao.update_layout(xaxis_title=None, yaxis_title="R$", yaxis=dict(gridcolor='#333'))
             st.plotly_chart(fig_aquisicao, use_container_width=True)
         else:
-            st.info("Dados insuficientes de 'Entrada' para plotar curva de aquisição.")
+            st.info("Sem dados temporais.")
 
     with col_t2:
-        st.markdown("**Fluxo Operacional (Entradas vs Saídas)**")
+        st.markdown("**Movimentações**")
         if not df_mov.empty:
             mov_no_tempo = df_mov.set_index('data_hora').groupby('tipo_movimentacao').resample('ME').size().reset_index(name='contagem')
+            color_map = {'Entrada': COR_PRINCIPAL, 'Saída': '#A9A9A9'}
             
-            color_map = {'Entrada': COR_PRINCIPAL, 'Saída': '#bec8c3'}
-            
-            fig_mov = px.line(
-                mov_no_tempo,
-                x='data_hora',
-                y='contagem',
-                color='tipo_movimentacao',
-                color_discrete_map=color_map, 
-                markers=True
-            )
-            fig_mov.update_layout(xaxis_title="Mês", yaxis_title="Qtd. Movimentações")
+            fig_mov = px.line(mov_no_tempo, x='data_hora', y='contagem', color='tipo_movimentacao', color_discrete_map=color_map, markers=True)
+            fig_mov.update_layout(**LAYOUT_CLEAN) 
+            fig_mov.update_layout(xaxis_title=None, yaxis_title="Qtd", yaxis=dict(gridcolor='#333'))
             st.plotly_chart(fig_mov, use_container_width=True)
         else:
-            st.info("Sem histórico de movimentações.")
+            st.info("Sem dados de movimentação.")
             
-    st.subheader("Responsabilidade")
-    
-    st.markdown("**Top Responsáveis por Valor sob Custódia**")
+    st.markdown("**Top Responsáveis (Valor)**")
     valor_por_resp = df_patr.groupby(db.RESPONSAVEL_COL)[db.VALOR_COL].sum().sort_values(ascending=False).head(10).reset_index()
     
-    fig_resp_val = px.bar(
-        valor_por_resp,
-        x=db.RESPONSAVEL_COL,
-        y=db.VALOR_COL,
-        text_auto='.2s'
-    )
+    fig_resp_val = px.bar(valor_por_resp, x=db.RESPONSAVEL_COL, y=db.VALOR_COL, text_auto='.2s')
     fig_resp_val.update_traces(marker_color=COR_PRINCIPAL, textposition='outside')
-    fig_resp_val.update_layout(yaxis_title="Valor Total (R$)", xaxis_title=None)
+    fig_resp_val.update_layout(**LAYOUT_CLEAN) 
+    fig_resp_val.update_layout(yaxis_title="R$", xaxis_title=None, yaxis=dict(gridcolor='#333'))
     st.plotly_chart(fig_resp_val, use_container_width=True)
 
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
