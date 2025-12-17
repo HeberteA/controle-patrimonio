@@ -5,6 +5,7 @@ import base64
 import textwrap
 import plotly.express as px
 from datetime import datetime
+from streamlit_option_menu import option_menu
 import database as db
 import utils
 
