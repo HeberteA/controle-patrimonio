@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from st_supabase_connection import SupabaseConnection
-from datetime import datetime
 
 ID_COL = "id"
 OBRA_COL = "obra"
@@ -25,7 +24,7 @@ def get_db_connection():
             key=st.secrets["connections"]["supabase"]["key"]
         )
     except Exception as e:
-        st.error("Erro na conexão com Supabase.")
+        st.error("ERRO GRAVE NA CONEXÃO COM O SUPABASE. Verifique os secrets.")
         st.stop()
 
 def upload_to_storage(file_data, file_name, file_type='application/pdf'):
@@ -39,11 +38,11 @@ def upload_to_storage(file_data, file_name, file_type='application/pdf'):
         )
         return conn.storage.from_(bucket_name).get_public_url(file_name)
     except Exception as e:
-        st.error(f"Erro no upload: {e}")
+        st.error(f"Erro no upload para o Supabase Storage: {e}")
         return None
 
-@st.cache_data(ttl=30)
-def carregar_dados():
+@st.cache_data(ttl=30) 
+def carregar_dados_app():
     conn = get_db_connection()
     try:
         status_resp = conn.table("status").select("*").execute()
@@ -53,36 +52,44 @@ def carregar_dados():
         lista_obras = [row['nome_da_obra'] for row in obras_resp.data]
         
         patrimonio_resp = conn.table("patrimonio").select("*").execute()
-        df_patrimonio = pd.DataFrame(patrimonio_resp.data)
+        patrimonio_df = pd.DataFrame(patrimonio_resp.data)
         
-        if df_patrimonio.empty:
-            cols = [ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, OBS_COL, 
-                    LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, NF_LINK_COL, VALOR_COL, STATUS_COL]
-            df_patrimonio = pd.DataFrame(columns=cols)
+        colunas_patrimonio = [
+            ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, 
+            OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, 
+            NF_LINK_COL, VALOR_COL, STATUS_COL
+        ]
+
+        if patrimonio_df.empty: 
+             patrimonio_df = pd.DataFrame(columns=colunas_patrimonio)
         
-        if VALOR_COL in df_patrimonio.columns:
-            df_patrimonio[VALOR_COL] = pd.to_numeric(df_patrimonio[VALOR_COL], errors='coerce').fillna(0)
+        if VALOR_COL in patrimonio_df.columns:
+            patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
+        
+        movimentacoes_resp = conn.table("movimentacoes").select("*").execute()
+        movimentacoes_df = pd.DataFrame(movimentacoes_resp.data)
+        if movimentacoes_df.empty:
+            movimentacoes_df = pd.DataFrame(columns=[
+                ID_COL, OBRA_COL, TOMBAMENTO_COL, "tipo_movimentacao", 
+                "data_hora", "responsavel_movimentacao", "observacoes"
+            ])
             
-        mov_resp = conn.table("movimentacoes").select("*").execute()
-        df_mov = pd.DataFrame(mov_resp.data)
-        if df_mov.empty:
-            df_mov = pd.DataFrame(columns=[ID_COL, OBRA_COL, TOMBAMENTO_COL, "tipo_movimentacao", "data_hora"])
-
-        loc_resp = conn.table("locacoes").select("*").execute()
-        df_loc = pd.DataFrame(loc_resp.data)
+        locacoes_resp = conn.table("locacoes").select("*").execute()
+        locacoes_df = pd.DataFrame(locacoes_resp.data)
+        colunas_locacao = [
+            "id", "equipamento", "obra_destino", "responsavel", "quantidade", 
+            "unidade", "valor_mensal", "contrato_sienge", "status", 
+            "data_inicio", "data_previsao_fim"
+        ]
         
-        colunas_loc = ["id", "equipamento", "obra_destino", "responsavel", "quantidade", 
-                       "unidade", "valor_mensal", "contrato_sienge", "status", "data_inicio", "data_previsao_fim"]
-        
-        if df_loc.empty:
-            df_loc = pd.DataFrame(columns=colunas_loc)
+        if locacoes_df.empty:
+            locacoes_df = pd.DataFrame(columns=colunas_locacao)
         else:
-            for col in ['data_inicio', 'data_previsao_fim']:
-                if col in df_loc.columns:
-                    df_loc[col] = pd.to_datetime(df_loc[col], errors='coerce')
+            locacoes_df['data_inicio'] = pd.to_datetime(locacoes_df['data_inicio'], errors='coerce')
+            locacoes_df['data_previsao_fim'] = pd.to_datetime(locacoes_df['data_previsao_fim'], errors='coerce')
 
-        return lista_status, lista_obras, df_patrimonio, df_mov, df_loc
+        return lista_status, lista_obras, patrimonio_df, movimentacoes_df, locacoes_df
     
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro ao carregar dados do Supabase: {e}")
         return [], [], pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
