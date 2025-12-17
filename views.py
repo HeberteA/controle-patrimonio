@@ -450,7 +450,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 total_valor_patr = dados_filt[db.VALOR_COL].sum()
                 qtd_patr = dados_filt.shape[0]
                 st.markdown(textwrap.dedent(f"""
-                <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; padding: 20px; margin-botton:20px;">
+                <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h4 style="margin:0; color: #E37026;">Resumo Patrimonial</h4>
                         <div style="text-align:right;">
@@ -576,7 +576,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 qtd_equip = df_l.shape[0]
                 
                 st.markdown(textwrap.dedent(f"""
-                <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; padding: 20px; margin-botton:20px;">
+                <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h4 style="margin:0; color: #E37026;">{filtro_obra_loc if filtro_obra_loc != 'Todas' else 'Resumo Locações'}</h4>
                         <div style="text-align:right;">
@@ -616,7 +616,6 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                 <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
                                 <div style="min-width: 50px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
                                 <div style="min-width: 140px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row['responsavel']}</div>
-                                
                                 <div><b style="color: #888; display:block;">VALOR UNIT.</b><span style="color: #aaa;">{valor_loc_fmt}</span></div>
                                 <div><b style="color: #888; display:block;">VALOR TOTAL</b><span style="color: #E37026; font-weight:bold;">R$ {v_total_show:,.2f}</span></div>
                             </div>
