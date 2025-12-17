@@ -450,7 +450,7 @@ def tela_de_login():
                 st.error("Senha de administrador incorreta.")
                 
 def pagina_dashboard(dados_da_obra, df_movimentacoes):
-    st.header("Análise de Ativos", divider='rainbow')
+    st.header("Análise de Ativos", divider='orange')
 
     COR_PRINCIPAL = "#E37026"
 
@@ -979,6 +979,7 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
             
             
             st.dataframe(df_v, use_container_width=True, hide_index=True)
+            st.header("", divider="orange")
 
             dados_xls = gerar_excel(df_v, sheet_name="Patrimonio")
             dados_pdf = gerar_pdf(df_v, tipo="patrimonio", obra_nome=st.session_state.get("selected_obra", "Geral"))
@@ -1028,7 +1029,8 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
                                 st.session_state.movement_item_id = None
                                 time.sleep(1)
                                 st.rerun()
-                                
+
+            st.header("", divider="orange")
             col_d1, col_d2 = st.columns([1, 1])
             with col_d1:
                 if dados_xls: 
@@ -1056,7 +1058,7 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
              
             st.dataframe(df_lv, use_container_width=True, hide_index=True)
             
-            execel_data = gerar_excel(df_lv, sheet_name="locaçoes")
+            excel_data = gerar_excel(df_lv, sheet_name="locaçoes")
             pdf_data = gerar_pdf(df_lv, tipo="locaçoes", obra_nome=st.session_state.get("selected_obra", "Geral"))
                                          
             st.markdown("### Selecionar Locação")
