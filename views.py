@@ -486,7 +486,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                 <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
                                 <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
                                 <div style="min-width: 120px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
-                                <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_fmt}</span></div>
+                                <div><b style="color: #888; display:block;">VALOR</b><span style="color: #E37026;">{valor_fmt}</span></div>
                             </div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888; font-style: italic;">
                                 {espec_safe}
