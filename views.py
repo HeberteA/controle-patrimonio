@@ -438,7 +438,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                     "max-width": "100%", 
                     "margin": "0"        
                 },
-                "icon": {"color": "#666", "font-size": "16px"}, 
+                "icon": {"color": "#333", "font-size": "16px"}, 
                 "nav-link": {
                     "font-size": "14px", 
                     "text-align": "center", 
@@ -594,7 +594,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                     "max-width": "100%", 
                     "margin": "0"         
                 },
-                "icon": {"color": "#666", "font-size": "16px"}, 
+                "icon": {"color": "#333", "font-size": "16px"}, 
                 "nav-link": {
                     "font-size": "14px", 
                     "text-align": "center", 
