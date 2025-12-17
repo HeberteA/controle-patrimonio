@@ -423,7 +423,26 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
     tab_patrimonio, tab_locacoes = st.tabs(["Patrimônio", "Locações Ativas"])
 
     with tab_patrimonio:
-        modo_view_patr = st.radio("Modo de Visualização (Patrimônio):", ["Cards", "Tabela"], horizontal=True, label_visibility="collapsed")
+        modo_view_patr = option_menu(
+            menu_title=None, 
+            options=["Cards", "Tabela"], 
+            icons=['grid-fill', 'table'], 
+            default_index=0, 
+            orientation="horizontal",
+            styles={
+                "container": {"padding": "0!important", "background-color": "transparent"},
+                "icon": {"color": "#666", "font-size": "16px"}, 
+                "nav-link": {
+                    "font-size": "14px", 
+                    "text-align": "center", 
+                    "margin": "0px", 
+                    "--hover-color": "#eee",
+                    "color": "#333" 
+                },
+                "nav-link-selected": {"background-color": "#E37026", "color": "white"}, 
+            },
+            key="menu_patrimonio" 
+        )
         
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
@@ -554,7 +573,26 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
 
                     
     with tab_locacoes:
-        modo_view_loc = st.radio("Modo de Visualização (Locações):", ["Cards", "Tabela"], horizontal=True, label_visibility="collapsed")
+        modo_view_loc = option_menu(
+            menu_title=None, 
+            options=["Cards", "Tabela"], 
+            icons=['grid-fill', 'table'], 
+            default_index=0, 
+            orientation="horizontal",
+            styles={
+                "container": {"padding": "0!important", "background-color": "transparent"},
+                "icon": {"color": "#666", "font-size": "16px"}, 
+                "nav-link": {
+                    "font-size": "14px", 
+                    "text-align": "center", 
+                    "margin": "0px", 
+                    "--hover-color": "#eee",
+                    "color": "#333"
+                },
+                "nav-link-selected": {"background-color": "#E37026", "color": "white"},
+            },
+            key="menu_locacoes"
+        )
         
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
