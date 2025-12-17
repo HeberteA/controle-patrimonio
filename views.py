@@ -329,16 +329,16 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
 
                         novo_item_dict = {
                             OBRA_COL: obra_para_cadastro,
-                            TOMBAMENTO_COL: num_final_envio,
-                            NOME_COL: nome_produto,
-                            ESPEC_COL: especificacoes,
-                            OBS_COL: observacoes,
-                            LOCAL_COL: local_uso,
-                            RESPONSAVEL_COL: responsavel,
-                            NF_NUM_COL: num_nota_fiscal,
+                            TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
+                            NOME_COL: nome_produto.upper(),
+                            ESPEC_COL: especificacoes.upper(),
+                            OBS_COL: observacoes.upper(),
+                            LOCAL_COL: local_uso.upper(),
+                            RESPONSAVEL_COL: responsavel.upper(),
+                            NF_NUM_COL: num_nota_fiscal.upper(),
                             NF_LINK_COL: link_nota_fiscal,
                             VALOR_COL: valor_produto,
-                            STATUS_COL: status_selecionado
+                            STATUS_COL: status_selecionado 
                         }
                         
                         try:
@@ -393,18 +393,19 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     calc_total = loc_qtd * loc_valor
                     
                     nova_locacao = {
-                        "equipamento": loc_equipamento,
+                        "equipamento": loc_equipamento.upper(),
+                        "responsavel": loc_responsavel.upper(),
+                        "unidade": loc_unidade.upper(),
+                        "contrato_sienge": loc_contrato.upper(),
                         "obra_destino": loc_obra if is_admin else st.session_state.selected_obra,
-                        "responsavel": loc_responsavel,
                         "quantidade": loc_qtd,
-                        "unidade": loc_unidade,
-                        "valor_mensal": loc_valor, 
-                        "valor_total": calc_total,
-                        "contrato_sienge": loc_contrato,
+                        "valor_mensal": loc_valor,
+                        "valor_total": calc_total, 
                         "status": loc_status,
                         "data_inicio": loc_inicio.isoformat() if loc_inicio else None,
                         "data_previsao_fim": loc_fim.isoformat() if loc_fim else None
                     }
+                    
                     try:
                         conn.table("locacoes").insert(nova_locacao).execute()
                         st.success(f"Locação de '{loc_equipamento}' registrada! Total: R$ {calc_total:,.2f}")
