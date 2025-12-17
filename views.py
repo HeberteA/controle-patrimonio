@@ -390,13 +390,16 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                 if not (loc_equipamento and loc_obra):
                     st.error("Campos 'Equipamento' e 'Obra' são obrigatórios.")
                 else:
+                    calc_total = loc_qtd * loc_valor
+                    
                     nova_locacao = {
                         "equipamento": loc_equipamento,
                         "obra_destino": loc_obra if is_admin else st.session_state.selected_obra,
                         "responsavel": loc_responsavel,
                         "quantidade": loc_qtd,
                         "unidade": loc_unidade,
-                        "valor_mensal": loc_valor,
+                        "valor_mensal": loc_valor, 
+                        "valor_total": calc_total,
                         "contrato_sienge": loc_contrato,
                         "status": loc_status,
                         "data_inicio": loc_inicio.isoformat() if loc_inicio else None,
@@ -404,12 +407,11 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     }
                     try:
                         conn.table("locacoes").insert(nova_locacao).execute()
-                        st.success(f"Locação de '{loc_equipamento}' registrada!")
+                        st.success(f"Locação de '{loc_equipamento}' registrada! Total: R$ {calc_total:,.2f}")
                         st.cache_data.clear()
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao salvar locação: {e}")
-
 
 
 def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, lista_status, lista_obras):
@@ -570,7 +572,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 df_l = df_l[df_l["equipamento"].str.contains(busca_loc, case=False, na=False) | df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)]
 
             if modo_view_loc == "Cards":
-                total_mensal = df_l["valor_mensal"].sum()
+                total_mensal = df_l["valor_total"].sum() if "valor_total" in df_l.columns else 0.0
                 qtd_equip = df_l.shape[0]
                 
                 st.markdown(textwrap.dedent(f"""
@@ -598,6 +600,8 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         else: cor_loc = "#dc3545" 
                         bg_loc = f"{cor_loc}22"
                         st.header("", divider="orange")
+                        
+                        v_total_show = row['valor_total'] if row.get('valor_total') else (row['quantidade'] * row['valor_mensal'])
 
                         html_loc = f"""
                         <div style="margin-bottom: 10px;">
@@ -610,9 +614,11 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             </div>
                             <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
                                 <div style="min-width: 140px;"><b style="color: #888; display:block;">OBRA</b>{row['obra_destino']}</div>
-                                <div style="min-width: 80px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
+                                <div style="min-width: 50px;"><b style="color: #888; display:block;">QTD</b>{row['quantidade']}</div>
                                 <div style="min-width: 140px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row['responsavel']}</div>
-                                <div><b style="color: #888; display:block;">VALOR</b><span style="color: #4cd137;">{valor_loc_fmt}</span></div>
+                                
+                                <div><b style="color: #888; display:block;">VALOR UNIT.</b><span style="color: #aaa;">{valor_loc_fmt}</span></div>
+                                <div><b style="color: #888; display:block;">VALOR TOTAL</b><span style="color: #E37026; font-weight:bold;">R$ {v_total_show:,.2f}</span></div>
                             </div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #aaa; display:flex; gap: 20px;">
                                 <span>Início: {d_inicio}</span><span>Prev. Fim: {d_fim}</span>
