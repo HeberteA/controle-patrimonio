@@ -272,7 +272,7 @@ def pagina_dashboard(df_patr, df_mov):
             st.info("Não há dados de status para analisar.")
 
 def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data):
-    st.header("Novo Cadastro", divider='rainbow')
+    st.header("Novo Cadastro", divider='orange')
     tab_patrimonio, tab_locacao = st.tabs(["Patrimônio", "Locação"])
 
     with tab_patrimonio:
@@ -420,7 +420,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
     tab_patrimonio, tab_locacoes = st.tabs(["Patrimônio", "Locações Ativas"])
 
     with tab_patrimonio:
-        modo_view_patr = st.radio("Modo de Visualização (Patrimônio):", ["Cards (Visual)", "Tabela (Gerencial)"], horizontal=True, label_visibility="collapsed")
+        modo_view_patr = st.radio("Modo de Visualização (Patrimônio):", ["Cards", "Tabela"], horizontal=True, label_visibility="collapsed")
         
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
@@ -444,10 +444,9 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
             if filter_st != "Todos":
                 dados_filt = dados_filt[dados_filt[db.STATUS_COL] == filter_st]
 
-            if modo_view_patr == "Cards (Visual)":
+            if modo_view_patr == "Cards":
                 total_valor_patr = dados_filt[db.VALOR_COL].sum()
                 qtd_patr = dados_filt.shape[0]
-                
                 st.markdown(textwrap.dedent(f"""
                 <div style="background-color: transparent !important; background-image: linear-gradient(160deg, #1e1e1f 0%, #0a0a0c 100%) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; padding: 20px; margin-botton:20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -511,6 +510,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                     st.markdown(href, unsafe_allow_html=True)
 
             else:
+                st.header("", divider='orange')
                 st.dataframe(dados_filt, use_container_width=True, hide_index=True)
                 
                 dados_xls = utils.gerar_excel(dados_filt, sheet_name="Patrimonio")
@@ -521,7 +521,9 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 with col_d2:
                     if dados_pdf: st.download_button("PDF", dados_pdf, "Patrimonio.pdf", "application/pdf", use_container_width=True, type="primary")
 
-                st.markdown("### Selecionar Item para Ação (Edição, Movimentação, Exclusão)")
+                st.header("", divider='orange')
+
+                st.markdown("### Selecionar Item para Ação")
                 opts = dados_filt.apply(lambda x: f"{x[db.TOMBAMENTO_COL]} - {x[db.NOME_COL]}", axis=1).tolist()
                 sel_item = st.selectbox("Selecione o Item:", options=opts, index=None, placeholder="Clique para selecionar...")
                 
@@ -549,7 +551,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
 
                     
     with tab_locacoes:
-        modo_view_loc = st.radio("Modo de Visualização (Locações):", ["Cards (Visual)", "Tabela (Gerencial)"], horizontal=True, label_visibility="collapsed")
+        modo_view_loc = st.radio("Modo de Visualização (Locações):", ["Cards", "Tabela"], horizontal=True, label_visibility="collapsed")
         
         if dados_locacoes.empty:
             st.info("Nenhuma locação registrada.")
@@ -567,7 +569,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
             if busca_loc:
                 df_l = df_l[df_l["equipamento"].str.contains(busca_loc, case=False, na=False) | df_l["contrato_sienge"].str.contains(busca_loc, case=False, na=False)]
 
-            if modo_view_loc == "Cards (Visual)":
+            if modo_view_loc == "Cards":
                 total_mensal = df_l["valor_mensal"].sum()
                 qtd_equip = df_l.shape[0]
                 
@@ -634,6 +636,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                 st.warning("Confirmar?")
 
             else:
+                st.header("", divider='orange')
                 st.dataframe(df_l, use_container_width=True, hide_index=True)
                 excel_data = utils.gerar_excel(df_l, sheet_name="locaçoes")
                 pdf_data = utils.gerar_pdf(df_l, tipo="locaçoes", obra_nome=st.session_state.get("selected_obra", "Geral"))
@@ -641,6 +644,8 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 col_l1, col_l2 = st.columns([1, 1])
                 with col_l1: st.download_button(label="Baixar Excel", data=excel_data, file_name="Locacoes.xlsx", type="primary", use_container_width=True)
                 with col_l2: st.download_button(label="Baixar PDF", data=pdf_data, file_name="Locacoes.pdf", type="primary", use_container_width=True)
+
+                st.header("", divider='orange')
                 
                 st.markdown("### Selecionar Locação")
                 opts_l = df_l.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
