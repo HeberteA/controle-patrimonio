@@ -97,7 +97,7 @@ def app_principal():
         views.pagina_dashboard(dados_patrimonio, df_movimentacoes)
     elif selected_page == "Cadastrar Item":
         views.pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, dados_patrimonio)
-    elif selected_page == "Inventário Unificado":
+    elif selected_page == "Inventário":
         views.pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes_filt, lista_status, lista_obras_app)
 
 if not st.session_state.logged_in:
