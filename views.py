@@ -434,9 +434,10 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 "container": {
                     "padding": "0!important", 
                     "background-color": "transparent",
-                    "width": "100%",      
-                    "max-width": "100%",  
+                    "width": "100%",     
+                    "max-width": "100%", 
                     "margin": "0"        
+                },
                 "icon": {"color": "#666", "font-size": "16px"}, 
                 "nav-link": {
                     "font-size": "14px", 
@@ -447,7 +448,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 },
                 "nav-link-selected": {"background-color": "#E37026", "color": "white"},
             },
-            key="menu_patrimonio" 
+            key="menu_patrimonio"
         )
         
         if dados_patrimonio.empty:
@@ -589,7 +590,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 "container": {
                     "padding": "0!important", 
                     "background-color": "transparent",
-                    "width": "100%",     
+                    "width": "100%",    
                     "max-width": "100%", 
                     "margin": "0"         
                 },
