@@ -517,9 +517,9 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 dados_pdf = utils.gerar_pdf(dados_filt, tipo="patrimonio", obra_nome=st.session_state.get("selected_obra", "Geral"))
                 col_d1, col_d2 = st.columns([1, 1])
                 with col_d1:
-                    if dados_xls: st.download_button("Excel", dados_xls, "Patrimonio.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    if dados_xls: st.download_button("Excel", dados_xls, "Patrimonio.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="primary")
                 with col_d2:
-                    if dados_pdf: st.download_button("PDF", dados_pdf, "Patrimonio.pdf", "application/pdf", use_container_width=True)
+                    if dados_pdf: st.download_button("PDF", dados_pdf, "Patrimonio.pdf", "application/pdf", use_container_width=True, type="primary")
 
                 st.markdown("### Selecionar Item para Ação (Edição, Movimentação, Exclusão)")
                 opts = dados_filt.apply(lambda x: f"{x[db.TOMBAMENTO_COL]} - {x[db.NOME_COL]}", axis=1).tolist()
@@ -536,7 +536,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             if st.button("Editar Dados Completos", use_container_width=True, type="primary", key="btn_edit_tab"):
                                 modal_editar_patrimonio(row_sel, lista_status)
                         with b2:
-                            if st.button("Registrar Movimentação", use_container_width=True):
+                            if st.button("Registrar Movimentação", use_container_width=True, type="primary"):
                                 form_movimentacoes()
                                 
                         with b3:
@@ -620,7 +620,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         """
                         st.markdown(html_loc, unsafe_allow_html=True)
                     
-                        c_edt, c_del = st.columns([1, 1])
+                        c_edt, c_del = st.columns(2)
                     with c_edt:
                         if st.button("Editar Locação", key=f"ed_l_{row['id']}", type="primary", use_container_width=True):
                             modal_editar_locacao(row, lista_obras)
@@ -639,8 +639,8 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                 pdf_data = utils.gerar_pdf(df_l, tipo="locaçoes", obra_nome=st.session_state.get("selected_obra", "Geral"))
                 
                 col_l1, col_l2 = st.columns([1, 1])
-                with col_l1: st.download_button(label="Baixar Excel", data=excel_data, file_name="Locacoes.xlsx")
-                with col_l2: st.download_button(label="Baixar PDF", data=pdf_data, file_name="Locacoes.pdf")
+                with col_l1: st.download_button(label="Baixar Excel", data=excel_data, file_name="Locacoes.xlsx", type="primary", use_container_width=True)
+                with col_l2: st.download_button(label="Baixar PDF", data=pdf_data, file_name="Locacoes.pdf", type="primary", use_container_width=True)
                 
                 st.markdown("### Selecionar Locação")
                 opts_l = df_l.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
