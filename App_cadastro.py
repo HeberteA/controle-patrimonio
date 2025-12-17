@@ -56,7 +56,7 @@ def app_principal():
         if is_admin: st.info("Logado como **Administrador**.")
         else: st.info(f"Obra: **{st.session_state.selected_obra}**")
 
-        menu_options = ["Cadastrar Item", "Inventário Unificado", "Dashboard"]
+        menu_options = ["Cadastrar Item", "Inventário", "Dashboard"]
         icons = ["plus-circle-fill", "card-list", "bar-chart-fill"]
         
         selected_page = option_menu(
