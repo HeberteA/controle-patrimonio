@@ -52,6 +52,14 @@ def app_principal():
     
     with st.sidebar:
         st.image("Lavie.png", use_container_width=True)
+        st.write("---")
+        st.markdown("""
+            <div class="sidebar-logo-container">
+                <div class="sidebar-logo-text">PATRIMÔNIO</div>
+                <div class="sidebar-logo-sub">Controle de Patrimônio</div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.write("---")
         st.header("Navegação")
         if is_admin: st.info("Logado como **Administrador**.")
         else: st.info(f"Obra: **{st.session_state.selected_obra}**")
