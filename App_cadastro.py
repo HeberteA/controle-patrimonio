@@ -7,6 +7,29 @@ import views
 st.set_page_config(page_title="Controle de Patrimônio Lavie", page_icon="Lavie1.png", layout="wide")
 utils.aplicar_css()
 
+st.markdown("""
+<style>
+    .sidebar-logo-container {
+        text-align: center;
+        padding: 20px 0;
+        margin-bottom: 20px;
+    }
+    .sidebar-logo-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        color: white;
+        letter-spacing: 2px;
+    }
+    .sidebar-logo-sub {
+        font-size: 0.7rem;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'is_admin' not in st.session_state: st.session_state.is_admin = False
 if 'selected_obra' not in st.session_state: st.session_state.selected_obra = None
