@@ -75,6 +75,12 @@ LOCAL_COL = "local_de_uso"
 RESPONSAVEL_COL = "responsavel"
 VALOR_COL = "valor"
 
+def clean_text(text):
+    """Converte texto para string e trata caracteres para o FPDF (latin-1)."""
+    if text is None:
+        return ""
+    return str(text).encode('latin-1', 'replace').decode('latin-1')
+
 def upload_to_supabase_storage(file_data, file_name, file_type='application/pdf'):
     try:
         conn_storage = st.connection(
@@ -211,6 +217,136 @@ def gerar_ficha_qr_code(row_series):
         st.error(f"Erro ao gerar Ficha QR: {e}")
         return None
 
+@st.cache_data
+def gerar_excel(df, sheet_name="Relatorio"):
+    try:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name=sheet_name)
+        
+            worksheet = writer.sheets[sheet_name]
+            for i, col in enumerate(df.columns):
+                max_len = max(
+                    df[col].astype(str).map(len).max(),
+                    len(str(col)) 
+                ) + 2 
+                worksheet.set_column(i, i, min(max_len, 50))
+                
+        return output.getvalue()
+    except Exception as e:
+        st.error(f"Erro ao gerar Excel: {e}")
+        return None
+
+def gerar_pdf_patrimonio(df, obra_nome):
+    try:
+        pdf = FPDF(orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        
+        logo_path = "Lavie.png"
+        try:
+            pdf.image(logo_path, x=10, y=5, w=40) 
+        except:
+            pass
+            
+        pdf.set_y(10) 
+        pdf.set_font('Arial', 'B', 16)
+        titulo = clean_text(f'Relatório de Patrimônio - {obra_nome}')
+        pdf.cell(0, 10, titulo, 0, 1, 'C')
+        pdf.ln(10)
+
+        col_config = {
+            TOMBAMENTO_COL:  (25, "Tomb."),
+            NOME_COL:        (80, "Item / Descrição"),
+            STATUS_COL:      (30, "Status"),
+            LOCAL_COL:       (50, "Local / Obra"),
+            RESPONSAVEL_COL: (50, "Responsável"),
+            VALOR_COL:       (40, "Valor (R$)")
+        }
+        cols_presentes = [c for c in col_config.keys() if c in df.columns]
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_fill_color(240, 240, 240) 
+        
+        for col in cols_presentes:
+            width, header_name = col_config[col]
+            pdf.cell(width, 8, clean_text(header_name), 1, 0, 'C', fill=True)
+        pdf.ln()
+
+        pdf.set_font('Arial', '', 8)
+        
+        for _, row in df.iterrows():
+            h = 7 
+            for col in cols_presentes:
+                width, _ = col_config[col]
+                texto = clean_text(row[col])
+                
+                max_char = int(width / 1.8) 
+                if len(texto) > max_char:
+                    texto = texto[:max_char] + "..."
+                    
+                pdf.cell(width, h, texto, 1, 0, 'C') 
+            pdf.ln()
+
+        return bytes(pdf.output(dest='S'))
+    
+    except Exception as e:
+        st.error(f"Erro ao gerar PDF Patrimônio: {e}")
+        return None
+
+def gerar_pdf_locacoes(df):
+    try:
+        pdf = FPDF(orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        
+        try: pdf.image("Lavie.png", x=10, y=5, w=40)
+        except: pass
+            
+        pdf.set_y(10)
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, clean_text("Relatório de Locações"), 0, 1, 'C')
+        pdf.ln(10)
+
+        col_config = {
+            'equipamento':  (70, "Equipamento Locado"),
+            'obra_destino': (50, "Obra Destino"),
+            'fornecedor':   (50, "Fornecedor"),
+            'data_inicio':  (30, "Início"),
+            'data_fim':     (30, "Fim/Prev."),
+            'valor_mensal': (30, "Valor (R$)"),
+            'status':       (15, "St.")
+        }
+        
+        cols_presentes = [c for c in col_config.keys() if c in df.columns]
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_fill_color(227, 112, 38)
+        pdf.set_text_color(255, 255, 255) 
+        
+        for col in cols_presentes:
+            width, header_name = col_config[col]
+            pdf.cell(width, 8, clean_text(header_name), 1, 0, 'C', fill=True)
+        pdf.ln()
+
+        pdf.set_font('Arial', '', 8)
+        pdf.set_text_color(0, 0, 0)
+        
+        for _, row in df.iterrows():
+            for col in cols_presentes:
+                width, _ = col_config[col]
+                texto = clean_text(row[col])
+                max_char = int(width / 1.8)
+                if len(texto) > max_char: texto = texto[:max_char] + "..."
+                
+                pdf.cell(width, 7, texto, 1, 0, 'C')
+            pdf.ln()
+
+        return bytes(pdf.output(dest='S'))
+
+    except Exception as e:
+        st.error(f"Erro ao gerar PDF Locações: {e}")
+        return None
+        
+        
 @st.dialog("Editar Patrimônio")
 def modal_editar_patrimonio(item_series, lista_status):
     st.write(f"Editando: **{item_series[NOME_COL]}**")
@@ -865,7 +1001,6 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes, lista_status, lista_obras):
     st.header("Gerenciamento Avançado", divider='orange')
     
-    # Lógica de Admin para Locações (mantida do seu código)
     if not st.session_state.is_admin:
         df_locacoes_view = dados_locacoes_full[dados_locacoes_full['obra_destino'] == st.session_state.selected_obra]
     else:
@@ -964,11 +1099,12 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
             search_l = st.text_input("Buscar Locação", key="search_ger_loc")
             df_lv = df_locacoes_view.copy()
             if search_l: df_lv = df_lv[df_lv["equipamento"].str.contains(search_l, case=False, na=False)]
-            
-            
-                
+             
             st.dataframe(df_lv, use_container_width=True, hide_index=True)
             
+            excel_data = gerar_excel(df_lv, sheet_name="Locacoes")
+            pdf_data = gerar_pdf_locacoes(df_lv)
+                                         
             st.markdown("### Selecionar Locação")
             opts_l = df_lv.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
             sel_loc = st.selectbox("Selecione:", options=opts_l, index=None, placeholder="Clique para selecionar...")
@@ -992,19 +1128,15 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
             col_l1, col_l2 = st.columns([1, 1])
             with col_l1:
                 st.download_button(
-                    label="Baixar Excel (Locações)",
-                    data=gerar_excel(df_lv),
-                    file_name="Locacoes_Filtradas.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+                    label="Baixar Excel", 
+                    data=excel_data, 
+                    file_name="Locacoes.xlsx"
                 )
             with col_l2:
                 st.download_button(
-                    label="Baixar PDF (Locações)",
-                    data=gerar_pdf(df_lv),
-                    file_name="Locacoes_Filtradas.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
+                    label="Baixar PDF", 
+                    data=pdf_data, 
+                    file_name="Locacoes.pdf"
                 )
                 
 def app_principal():
