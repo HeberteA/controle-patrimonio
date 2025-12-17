@@ -91,6 +91,25 @@ def modal_editar_locacao(row, lista_obras):
             st.cache_data.clear()
             st.rerun()
 
+@st.dialog("Registrar Nova Movimentação")
+def form_movimentacoes():
+    with st.form("form_movimentacao"):
+        tipo = st.radio("Tipo", ["Entrada", "Saída"], horizontal=True)
+        resp = st.text_input("Responsável pela Movimentação")
+        obs = st.text_area("Observações")
+        if st.form_submit_button("Salvar Movimentação", type="primary"):
+            conn = db.get_db_connection()
+            conn.table("movimentacoes").insert({
+                db.OBRA_COL: row_sel[db.OBRA_COL], db.TOMBAMENTO_COL: row_sel[db.TOMBAMENTO_COL],
+                "tipo_movimentacao": tipo, "data_hora": datetime.now().isoformat(),
+                "responsavel_movimentacao": resp, db.OBS_COL: obs
+            }).execute()
+            novo_st = "ATIVO" if tipo == "Entrada" else "EMPRÉSTIMO"
+            conn.table("patrimonio").update({db.STATUS_COL: novo_st}).eq(db.ID_COL, int(row_sel[db.ID_COL])).execute()
+            st.success("Movimentação registrada com sucesso!")
+            time.sleep(1.5)
+            st.rerun()
+
 def pagina_dashboard(df_patr, df_mov):
     st.header("Análise de Ativos", divider='orange')
     if df_patr.empty:
@@ -517,8 +536,9 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             if st.button("Editar Dados Completos", use_container_width=True, type="primary", key="btn_edit_tab"):
                                 modal_editar_patrimonio(row_sel, lista_status)
                         with b2:
-                            if st.button("Registrar Movimentação", use_container_width=True, key="btn_mov_tab"):
-                                st.session_state.movement_item_id = row_sel[db.ID_COL]
+                            if st.button("Registrar Movimentação", use_container_width=True):
+                                form_movimentacoes()
+                                
                         with b3:
                             if st.button("Excluir Item", use_container_width=True, type="secondary", key="btn_del_tab"):
                                  db.get_db_connection().table("patrimonio").delete().eq(db.ID_COL, int(row_sel[db.ID_COL])).execute()
@@ -527,27 +547,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                  st.cache_data.clear()
                                  st.rerun()
 
-                        if st.session_state.movement_item_id == row_sel[db.ID_COL]:
-                            st.divider()
-                            st.markdown("#### Nova Movimentação")
-                            with st.form("form_movimentacao"):
-                                tipo = st.radio("Tipo", ["Entrada", "Saída"], horizontal=True)
-                                resp = st.text_input("Responsável pela Movimentação")
-                                obs = st.text_area("Observações")
-                                if st.form_submit_button("Confirmar Movimentação", type="primary"):
-                                    conn = db.get_db_connection()
-                                    conn.table("movimentacoes").insert({
-                                        db.OBRA_COL: row_sel[db.OBRA_COL], db.TOMBAMENTO_COL: row_sel[db.TOMBAMENTO_COL],
-                                        "tipo_movimentacao": tipo, "data_hora": datetime.now().isoformat(),
-                                        "responsavel_movimentacao": resp, db.OBS_COL: obs
-                                    }).execute()
-                                    novo_st = "ATIVO" if tipo == "Entrada" else "EMPRÉSTIMO"
-                                    conn.table("patrimonio").update({db.STATUS_COL: novo_st}).eq(db.ID_COL, int(row_sel[db.ID_COL])).execute()
-                                    st.success("Movimentação registrada com sucesso!")
-                                    st.session_state.movement_item_id = None
-                                    time.sleep(1)
-                                    st.rerun()
-
+                    
     with tab_locacoes:
         modo_view_loc = st.radio("Modo de Visualização (Locações):", ["Cards (Visual)", "Tabela (Gerencial)"], horizontal=True, label_visibility="collapsed")
         
