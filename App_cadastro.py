@@ -75,7 +75,6 @@ def app_principal():
     
     with st.sidebar:
         st.image("Lavie.png", use_container_width=True)
-        st.write("---")
         st.markdown("""
             <div class="sidebar-logo-container">
                 <div class="sidebar-logo-text">PATRIMÔNIO</div>
