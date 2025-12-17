@@ -865,6 +865,7 @@ def pagina_itens_cadastrados(is_admin, dados_patrimonio, dados_locacoes, lista_s
 def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes, lista_status, lista_obras):
     st.header("Gerenciamento Avançado", divider='orange')
     
+    # Lógica de Admin para Locações (mantida do seu código)
     if not st.session_state.is_admin:
         df_locacoes_view = dados_locacoes_full[dados_locacoes_full['obra_destino'] == st.session_state.selected_obra]
     else:
@@ -888,7 +889,8 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
                     df_v[TOMBAMENTO_COL].astype(str).str.contains(search_g, case=False, na=False)
                 ]
             
-            st.dataframe(df_v[[TOMBAMENTO_COL, NOME_COL, STATUS_COL, RESPONSAVEL_COL]], use_container_width=True, hide_index=True)
+            
+            st.dataframe(df_v, use_container_width=True, hide_index=True)
             
             st.markdown("### Selecionar Item para Ação")
             opts = df_v.apply(lambda x: f"{x[TOMBAMENTO_COL]} - {x[NOME_COL]}", axis=1).tolist()
@@ -935,6 +937,25 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
                                 st.session_state.movement_item_id = None
                                 time.sleep(1)
                                 st.rerun()
+                                
+            col_d1, col_d2 = st.columns([1, 1])
+            with col_d1:
+                st.download_button(
+                    label="Baixar Excel (Patrimônio)",
+                    data=gerar_excel(df_v),
+                    file_name="Patrimonio_Filtrado.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            with col_d2:
+                st.download_button(
+                    label="Baixar PDF (Patrimônio)",
+                    data=gerar_pdf(df_v),
+                    file_name="Patrimonio_Filtrado.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
 
     with tab_ger_loc:
         if df_locacoes_view.empty:
@@ -944,7 +965,9 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
             df_lv = df_locacoes_view.copy()
             if search_l: df_lv = df_lv[df_lv["equipamento"].str.contains(search_l, case=False, na=False)]
             
-            st.dataframe(df_lv[["id", "equipamento", "obra_destino", "status", "valor_mensal"]], use_container_width=True, hide_index=True)
+            
+                
+            st.dataframe(df_lv, use_container_width=True, hide_index=True)
             
             st.markdown("### Selecionar Locação")
             opts_l = df_lv.apply(lambda x: f"{x['id']} - {x['equipamento']}", axis=1).tolist()
@@ -966,6 +989,24 @@ def pagina_gerenciar_itens(dados_da_obra, dados_locacoes_full, df_movimentacoes,
                         st.cache_data.clear()
                         st.rerun()
 
+            col_l1, col_l2 = st.columns([1, 1])
+            with col_l1:
+                st.download_button(
+                    label="Baixar Excel (Locações)",
+                    data=gerar_excel(df_lv),
+                    file_name="Locacoes_Filtradas.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            with col_l2:
+                st.download_button(
+                    label="Baixar PDF (Locações)",
+                    data=gerar_pdf(df_lv),
+                    file_name="Locacoes_Filtradas.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+                
 def app_principal():
     is_admin = st.session_state.is_admin
     obra_selecionada_sidebar = None 
