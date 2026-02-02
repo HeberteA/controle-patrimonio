@@ -92,10 +92,15 @@ def app_principal():
         selected_page = option_menu(
             menu_title=None, options=menu_options, icons=icons,
             menu_icon="cast", default_index=1,
-            styles={ 
-                "container": {"padding": "5px !important", "background-color": "transparent"},
-                "icon": {"font-size": "18px"}, "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
-                "nav-link-selected": {"background-color": "#E37026"}, 
+            styles={
+                "container": {"padding": "0!important", "background": "transparent"},
+                "nav-link": {"color": "#aaa", "font-size": "0.9rem", "margin":"6px", "text-align": "left"},
+                "nav-link-selected": {
+                    "background-color": "rgba(227, 112, 38, 0.15)", 
+                    "color": "#E37026", 
+                    "border-left": "3px solid #E37026"
+                },
+                "icon": {"font-size": "1.1rem"}
             }
         )
         
