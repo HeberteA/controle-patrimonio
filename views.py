@@ -311,21 +311,21 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                             link_nota_fiscal = upload_to_supabase_storage(uploaded_pdf.getvalue(), file_name)
 
                         novo_item_dict = {
-                            OBRA_COL: obra_para_cadastro,
-                            TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
-                            NOME_COL: nome_produto.upper(),
-                            ESPEC_COL: especificacoes.upper(),
-                            OBS_COL: observacoes.upper(),
-                            LOCAL_COL: local_uso.upper(),
-                            RESPONSAVEL_COL: responsavel.upper(),
-                            NF_NUM_COL: num_nota_fiscal.upper(),
-                            NF_LINK_COL: link_nota_fiscal,
-                            VALOR_COL: valor_produto,
-                            STATUS_COL: status_selecionado 
+                            db.OBRA_COL: obra_para_cadastro
+                            db.TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
+                            db.NOME_COL: nome_produto.upper(),
+                            db.ESPEC_COL: especificacoes.upper(),
+                            db.OBS_COL: observacoes.upper(),
+                            db.LOCAL_COL: local_uso.upper(),
+                            db.RESPONSAVEL_COL: responsavel.upper(),
+                            db.NF_NUM_COL: num_nota_fiscal.upper(),
+                            db.NF_LINK_COL: link_nota_fiscal,
+                            db.VALOR_COL: valor_produto,
+                            db.STATUS_COL: status_selecionado 
                         }
                         
                         try:
-                            conn.table("patrimonio").insert(novo_item_dict).execute()
+                            db.get_db_connection().table("patrimonio").insert(novo_item_dict).execute()
                             st.success(f"Patrimônio '{nome_produto}' cadastrado com sucesso!")
                             st.cache_data.clear() 
                             st.rerun()
