@@ -311,7 +311,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                             link_nota_fiscal = upload_to_supabase_storage(uploaded_pdf.getvalue(), file_name)
 
                         novo_item_dict = {
-                            db.OBRA_COL: obra_para_cadastro
+                            db.OBRA_COL: obra_para_cadastro,
                             db.TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
                             db.NOME_COL: nome_produto.upper(),
                             db.ESPEC_COL: especificacoes.upper(),
