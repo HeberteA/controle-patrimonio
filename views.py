@@ -436,36 +436,37 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
         else:
-            col_busca1, col_busca2 = st.columns([2, 1])
-
-            with col_busca1:
-                search_term = st.text_input("Buscar Patrimônio", placeholder="Nome, tombamento, responsável...")
+            col_f1, col_f2, col_f3 = st.columns([2, 1, 1])
             
-            with col_busca2:
+            with col_f1:
+                search_term = st.text_input("Buscar Patrimônio", key="search_patr_uni", placeholder="Nome, Tombamento ou Responsável...")
+            
+            with col_f2:
                 if is_admin:
-                    obras_filtro = ["TODAS"] + lista_obras
-                    obra_selecionada = st.selectbox("Filtrar por Obra", options=obras_filtro)
+                    opcoes_obras = ["Todas"] + sorted(lista_obras)
+                    filtro_obra = st.selectbox("Filtrar por Obra", opcoes_obras, key="filtro_obra_patr")
                 else:
-                    obra_selecionada = st.session_state.get('selected_obra', 'TODAS')
-                    st.info(f"Obra: {obra_selecionada}")
-            
-            df_filtered = df_p.copy()
-            
-            if search_term:
-                df_filtered = df_filtered[
-                    df_filtered.apply(lambda row: search_term.lower() in row.astype(str).str.lower().values, axis=1)
-                ]
-            
-            if obra_selecionada != "TODAS":
-                df_filtered = df_filtered[df_filtered[db.OBRA_COL] == obra_selecionada]
+                    obra_logada = st.session_state.get("selected_obra", "Geral")
+                    st.write(f"**Obra:** {obra_logada}")
+                    filtro_obra = obra_logada
+
+            with col_f3:
+                filter_st = st.selectbox("Status", ["Todos"] + sorted(list(dados_patrimonio[db.STATUS_COL].unique())), key="filtro_st_patr")
 
             dados_filt = dados_patrimonio.copy()
+
+            if is_admin and filtro_obra != "Todas":
+                dados_filt = dados_filt[dados_filt[db.OBRA_COL] == filtro_obra]
+            elif not is_admin:
+                dados_filt = dados_filt[dados_filt[db.OBRA_COL] == filtro_obra]
+
             if search_term:
                 dados_filt = dados_filt[
                     dados_filt[db.NOME_COL].str.contains(search_term, case=False, na=False) |
                     dados_filt[db.TOMBAMENTO_COL].astype(str).str.contains(search_term, case=False, na=False) |
                     dados_filt[db.RESPONSAVEL_COL].str.contains(search_term, case=False, na=False)
                 ]
+
             if filter_st != "Todos":
                 dados_filt = dados_filt[dados_filt[db.STATUS_COL] == filter_st]
 
