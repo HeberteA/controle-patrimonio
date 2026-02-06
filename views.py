@@ -436,14 +436,28 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
         if dados_patrimonio.empty:
             st.info("Nenhum patrimônio cadastrado.")
         else:
-            col_f1, col_f2 = st.columns([2, 1])
-            with col_f1:
-                search_term = st.text_input("Buscar Patrimônio", key="search_patr_uni", placeholder="Nome, Tombamento ou Responsável...")
-            with col_f2:
-                 if modo_view_patr == "Tabela (Gerencial)":
-                     filter_st = st.selectbox("Status", ["Todos"] + sorted(list(dados_patrimonio[db.STATUS_COL].unique())), key="filtro_st_patr")
-                 else:
-                     filter_st = "Todos"
+            col_busca1, col_busca2 = st.columns([2, 1])
+
+            with col_busca1:
+                search_term = st.text_input("Buscar Patrimônio", placeholder="Nome, tombamento, responsável...")
+            
+            with col_busca2:
+                if is_admin:
+                    obras_filtro = ["TODAS"] + lista_obras
+                    obra_selecionada = st.selectbox("Filtrar por Obra", options=obras_filtro)
+                else:
+                    obra_selecionada = st.session_state.get('selected_obra', 'TODAS')
+                    st.info(f"Obra: {obra_selecionada}")
+            
+            df_filtered = df_p.copy()
+            
+            if search_term:
+                df_filtered = df_filtered[
+                    df_filtered.apply(lambda row: search_term.lower() in row.astype(str).str.lower().values, axis=1)
+                ]
+            
+            if obra_selecionada != "TODAS":
+                df_filtered = df_filtered[df_filtered[db.OBRA_COL] == obra_selecionada]
 
             dados_filt = dados_patrimonio.copy()
             if search_term:
