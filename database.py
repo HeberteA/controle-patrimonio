@@ -32,12 +32,12 @@ def upload_nota_fiscal(file_data, file_name):
     conn = get_db_connection()
     try:
         bucket_name = "notas-fiscais"
-        conn.storage.from_(bucket_name).upload(
+        conn.client.storage.from_(bucket_name).upload(
             file=file_data,
             path=file_name,
             file_options={"content-type": "application/pdf", "x-upsert": "true"}
         )
-        return conn.storage.from_(bucket_name).get_public_url(file_name)
+        return conn.client.storage.from_(bucket_name).get_public_url(file_name)
     except Exception as e:
         st.error(f"Erro no upload da NF: {e}")
         return None
@@ -46,16 +46,15 @@ def upload_foto_patrimonio(file_data, file_name, file_type):
     conn = get_db_connection()
     try:
         bucket_name = "fotos-patrimonio"
-        conn.storage.from_(bucket_name).upload(
+        conn.client.storage.from_(bucket_name).upload(
             file=file_data,
             path=file_name,
             file_options={"content-type": file_type, "x-upsert": "true"}
         )
-        return conn.storage.from_(bucket_name).get_public_url(file_name)
+        return conn.client.storage.from_(bucket_name).get_public_url(file_name)
     except Exception as e:
         st.error(f"Erro no upload da Foto: {e}")
         return None
-
 @st.cache_data(ttl=30) 
 def carregar_dados_app():
     conn = get_db_connection()
