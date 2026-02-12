@@ -49,7 +49,7 @@ def modal_editar_patrimonio(item_series, lista_status):
                 }).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
                 if nova_foto_file:
                     img_name = f"EDIT_{int(item_series[db.ID_COL])}_{datetime.now().strftime('%H%M%S')}.jpg"
-                    url_foto = db.upload_to_storage(
+                    url_foto = db.upload_foto_patrimonio(
                         nova_foto_file.getvalue(), 
                         img_name, 
                         bucket_name="fotos-patrimonio",
