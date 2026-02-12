@@ -52,11 +52,10 @@ def modal_editar_patrimonio(item_series, lista_status):
                     url_foto = db.upload_foto_patrimonio(
                         nova_foto_file.getvalue(), 
                         img_name, 
-                        bucket_name="fotos-patrimonio",
-                        file_type=nova_foto_file.type
+                        nova_foto_file.type
                     )
+                    
                     update_dict[db.FOTO_COL] = url_foto
-
                 conn.table("patrimonio").update(update_dict).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
                 st.success("Patrimônio atualizado!")
                 time.sleep(1)
