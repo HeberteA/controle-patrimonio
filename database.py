@@ -28,9 +28,24 @@ def get_db_connection():
         st.error("ERRO GRAVE NA CONEXÃO COM O SUPABASE. Verifique os secrets.")
         st.stop()
 
-def upload_to_storage(file_data, file_name, bucket_name="notas-fiscais", file_type='application/pdf'):
+def upload_nota_fiscal(file_data, file_name):
     conn = get_db_connection()
-    try:=
+    try:
+        bucket_name = "notas-fiscais"
+        conn.storage.from_(bucket_name).upload(
+            file=file_data,
+            path=file_name,
+            file_options={"content-type": "application/pdf", "x-upsert": "true"}
+        )
+        return conn.storage.from_(bucket_name).get_public_url(file_name)
+    except Exception as e:
+        st.error(f"Erro no upload da NF: {e}")
+        return None
+
+def upload_foto_patrimonio(file_data, file_name, file_type):
+    conn = get_db_connection()
+    try:
+        bucket_name = "fotos-patrimonio"
         conn.storage.from_(bucket_name).upload(
             file=file_data,
             path=file_name,
@@ -38,7 +53,7 @@ def upload_to_storage(file_data, file_name, bucket_name="notas-fiscais", file_ty
         )
         return conn.storage.from_(bucket_name).get_public_url(file_name)
     except Exception as e:
-        st.error(f"Erro no upload para o bucket {bucket_name}: {e}")
+        st.error(f"Erro no upload da Foto: {e}")
         return None
 
 @st.cache_data(ttl=30) 
@@ -57,11 +72,15 @@ def carregar_dados_app():
         colunas_patrimonio = [
             ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, 
             OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, 
-            NF_LINK_COL, VALOR_COL, STATUS_COL, FOTO_COL 
+            NF_LINK_COL, VALOR_COL, STATUS_COL, FOTO_COL
         ]
 
         if patrimonio_df.empty: 
              patrimonio_df = pd.DataFrame(columns=colunas_patrimonio)
+        
+        for col in colunas_patrimonio:
+            if col not in patrimonio_df.columns:
+                patrimonio_df[col] = None
         
         if VALOR_COL in patrimonio_df.columns:
             patrimonio_df[VALOR_COL] = pd.to_numeric(patrimonio_df[VALOR_COL], errors='coerce').fillna(0)
@@ -76,14 +95,12 @@ def carregar_dados_app():
             
         locacoes_resp = conn.table("locacoes").select("*").execute()
         locacoes_df = pd.DataFrame(locacoes_resp.data)
-        colunas_locacao = [
-            "id", "equipamento", "obra_destino", "responsavel", "quantidade", 
-            "unidade", "valor_mensal", "contrato_sienge", "status", 
-            "data_inicio", "data_previsao_fim"
-        ]
-        
         if locacoes_df.empty:
-            locacoes_df = pd.DataFrame(columns=colunas_locacao)
+            locacoes_df = pd.DataFrame(columns=[
+                "id", "equipamento", "obra_destino", "responsavel", "quantidade", 
+                "unidade", "valor_mensal", "contrato_sienge", "status", 
+                "data_inicio", "data_previsao_fim"
+            ])
         else:
             locacoes_df['data_inicio'] = pd.to_datetime(locacoes_df['data_inicio'], errors='coerce')
             locacoes_df['data_previsao_fim'] = pd.to_datetime(locacoes_df['data_previsao_fim'], errors='coerce')
