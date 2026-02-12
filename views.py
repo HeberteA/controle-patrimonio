@@ -27,8 +27,13 @@ def modal_editar_patrimonio(item_series, lista_status):
         nova_nf = st.text_input("Nota Fiscal (N°)", value=item_series[db.NF_NUM_COL])
         novas_specs = st.text_area("Especificações", value=item_series[db.ESPEC_COL])
         novas_obs = st.text_area("Observações", value=item_series[db.OBS_COL])
+        if item_series.get(db.FOTO_COL):
+            st.image(item_series[db.FOTO_COL], width=200, caption="Foto Atual")
         
-        if st.form_submit_button("Salvar Alterações", type="primary"):
+        nova_foto_file = st.file_uploader("Substituir Foto", type=["jpg", "png"])
+        st.write("---")
+        
+        if st.form_submit_button("Salvar"):
             try:
                 conn = db.get_db_connection()
                 conn.table("patrimonio").update({
@@ -42,6 +47,17 @@ def modal_editar_patrimonio(item_series, lista_status):
                     db.ESPEC_COL: novas_specs,
                     db.OBS_COL: novas_obs
                 }).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
+                if nova_foto_file:
+                    img_name = f"EDIT_{int(item_series[db.ID_COL])}_{datetime.now().strftime('%H%M%S')}.jpg"
+                    url_foto = db.upload_to_storage(
+                        nova_foto_file.getvalue(), 
+                        img_name, 
+                        bucket_name="fotos-patrimonio",
+                        file_type=nova_foto_file.type
+                    )
+                    update_dict[db.FOTO_COL] = url_foto
+
+                conn.table("patrimonio").update(update_dict).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
                 st.success("Patrimônio atualizado!")
                 time.sleep(1)
                 st.cache_data.clear()
@@ -296,15 +312,28 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
             
                 st.write("---")
                 uploaded_pdf = st.file_uploader("Anexar PDF da Nota Fiscal", type="pdf")
+                uploaded_img = st.file_uploader("Anexar Foto do Equipamento", type=["jpg", "jpeg", "png"])
                 
                 submitted = st.form_submit_button("Cadastrar Patrimônio", type="primary", use_container_width=True)
 
                 if submitted:
                     if not (nome_produto and num_nota_fiscal and local_uso and responsavel):
-                        st.error("⚠️ Preencha os campos obrigatórios: Nome, NF, Local e Responsável.")
+                        st.error("Preencha os campos obrigatórios: Nome, NF, Local e Responsável.")
                     else:
                         link_nota_fiscal = ""
-                        num_final_envio = num_tombamento_manual.strip() if num_tombamento_manual else None
+                        if uploaded_pdf:
+                            file_name = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
+                            link_nota_fiscal = db.upload_to_storage(uploaded_pdf.getvalue(), file_name)
+                
+                        link_foto = ""
+                        if uploaded_img:
+                            img_name = f"IMG_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.jpg"
+                            link_foto = db.upload_to_storage(
+                                uploaded_img.getvalue(), 
+                                img_name, 
+                                bucket_name="fotos-patrimonio", 
+                                file_type=uploaded_img.type
+                            )
 
                         if uploaded_pdf:
                             file_name = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
@@ -320,6 +349,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                             db.RESPONSAVEL_COL: responsavel.upper(),
                             db.NF_NUM_COL: num_nota_fiscal.upper(),
                             db.NF_LINK_COL: link_nota_fiscal,
+                            db.FOTO_COL: link_foto,
                             db.VALOR_COL: valor_produto,
                             db.STATUS_COL: status_selecionado 
                         }
@@ -497,26 +527,30 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         espec_safe = str(row[db.ESPEC_COL])[:100] + "..."
                         
                         st.header("", divider="orange")
+                        img_url = row[db.FOTO_COL] if pd.notnull(row.get(db.FOTO_COL)) and row.get(db.FOTO_COL) != "" else "https://via.placeholder.com/150?text=Sem+Foto"
                         html_content = f"""
-                        <div style="margin-bottom: 10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:start;">
-                                <div>
-                                    <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
-                                    <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[db.TOMBAMENTO_COL]}</div>
+                        <div style="margin-bottom: 10px; display: flex; justify-content: space-between; gap: 15px;">
+                            <div style="flex-grow: 1;">
+                                <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
+                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[db.TOMBAMENTO_COL]}</div>
+                                
+                                <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
+                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
+                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
+                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
+                                    <div><b style="color: #888; display:block;">VALOR</b><span style="color: #E37026;">{valor_fmt}</span></div>
                                 </div>
+                                <div style="margin-top: 10px; font-size: 0.85em; color: #888; font-style: italic;">
+                                    {espec_safe}
+                                </div>
+                            </div>
+                        
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
                                 <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
+                                <img src="{img_url}" style="width: 130px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333;">
                             </div>
-                            <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
-                                <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
-                                <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
-                                <div style="min-width: 120px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
-                                <div><b style="color: #888; display:block;">VALOR</b><span style="color: #E37026;">{valor_fmt}</span></div>
-                            </div>
-                            <div style="margin-top: 10px; font-size: 0.85em; color: #888; font-style: italic;">
-                                {espec_safe}
-                            </div>
-                            <hr style="border-top: 1px solid #333; margin: 15px 0 10px 0;">
                         </div>
+                        <hr style="border-top: 1px solid #333; margin: 5px 0 10px 0;">
                         """
                         st.markdown(html_content, unsafe_allow_html=True)
                         
