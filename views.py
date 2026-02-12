@@ -334,7 +334,7 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                             link_foto = db.upload_foto_patrimonio(uploaded_img.getvalue(), f_name_img, uploaded_img.type)
                         novo_item_dict = {
                             db.OBRA_COL: obra_para_cadastro,
-                            db.TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
+                            db.TOMBAMENTO_COL: num_tombamento_manual.upper() if num_tombamento_manual else None,
                             db.NOME_COL: nome_produto.upper(),
                             db.ESPEC_COL: especificacoes.upper(),
                             db.OBS_COL: observacoes.upper(),
