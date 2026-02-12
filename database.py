@@ -57,7 +57,7 @@ def carregar_dados_app():
         colunas_patrimonio = [
             ID_COL, OBRA_COL, TOMBAMENTO_COL, NOME_COL, ESPEC_COL, 
             OBS_COL, LOCAL_COL, RESPONSAVEL_COL, NF_NUM_COL, 
-            NF_LINK_COL, VALOR_COL, STATUS_COL
+            NF_LINK_COL, VALOR_COL, STATUS_COL, FOTO_COL 
         ]
 
         if patrimonio_df.empty: 
