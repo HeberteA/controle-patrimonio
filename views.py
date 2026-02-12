@@ -322,23 +322,13 @@ def pagina_cadastrar_item(is_admin, lista_status, lista_obras_app, existing_data
                     else:
                         link_nota_fiscal = ""
                         if uploaded_pdf:
-                            file_name = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
-                            link_nota_fiscal = db.upload_to_storage(uploaded_pdf.getvalue(), file_name)
-                
+                            f_name_pdf = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
+                            link_nota_fiscal = db.upload_nota_fiscal(uploaded_pdf.getvalue(), f_name_pdf)
+                        
                         link_foto = ""
                         if uploaded_img:
-                            img_name = f"IMG_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.jpg"
-                            link_foto = db.upload_to_storage(
-                                uploaded_img.getvalue(), 
-                                img_name, 
-                                bucket_name="fotos-patrimonio", 
-                                file_type=uploaded_img.type
-                            )
-
-                        if uploaded_pdf:
-                            file_name = f"NF_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.pdf"
-                            link_nota_fiscal = upload_to_supabase_storage(uploaded_pdf.getvalue(), file_name)
-
+                            f_name_img = f"IMG_{obra_para_cadastro}_{datetime.now().strftime('%H%M%S')}.jpg"
+                            link_foto = db.upload_foto_patrimonio(uploaded_img.getvalue(), f_name_img, uploaded_img.type)
                         novo_item_dict = {
                             db.OBRA_COL: obra_para_cadastro,
                             db.TOMBAMENTO_COL: num_final_envio.upper() if num_final_envio else None,
