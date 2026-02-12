@@ -539,8 +539,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             </div>
                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
                                 <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
-                                <img src="{img_html}" style="width: 130px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333;">
-                            </div>
+                                {img_html}
                         </div>
                         <hr style="border-top: 1px solid #333; margin: 5px 0 10px 0;">
                         """
