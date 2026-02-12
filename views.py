@@ -522,7 +522,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         st.header("", divider="orange")
                         url_foto = row.get(db.FOTO_COL)
                         if url_foto and str(url_foto).strip() != "" and str(url_foto) != "None":
-                            img_html = f'<img src="{url_foto}" style="width: 130px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">'
+                            img_html = f'<img src="{url_foto}" style="width: 200px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">'
                         else:
                             img_html = ""
                         html_content = f"""
@@ -543,7 +543,6 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             <div style="display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; flex-shrink: 0;">
                                 <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; text-align: center; margin-bottom: 5px;">{st_txt}</span>
                                 {img_html}
-                            </div>
                         </div>
                         <hr style="border-top: 1px solid #333; margin: 5px 0 10px 0;">
                         """
