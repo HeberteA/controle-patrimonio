@@ -529,20 +529,21 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         <div style="margin-bottom: 10px; display: flex; justify-content: space-between; gap: 15px;">
                             <div style="flex-grow: 1;">
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
-                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[db.TOMBAMENTO_COL]}</div>
-                                <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
-                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
-                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
-                                    <div style="min-width: 120px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
+                                <div style="color: #E37026; font-weight: bold; font-size: 0.9em; margin-bottom: 10px;">TOMBAMENTO: {row[db.TOMBAMENTO_COL]}</div>
+                                <div style="display:flex; flex-wrap: wrap; gap: 15px; color: #CCC; font-size: 0.85em;">
+                                    <div style="min-width: 100px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
+                                    <div style="min-width: 100px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
+                                    <div style="min-width: 100px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
                                     <div><b style="color: #888; display:block;">VALOR</b><span style="color: #E37026;">{valor_fmt}</span></div>
                                 </div>
-                                <div style="margin-top: 10px; font-size: 0.85em; color: #888; font-style: italic;">
+                                <div style="margin-top: 10px; font-size: 0.8em; color: #888; font-style: italic;">
                                     {espec_safe}
                                 </div>
                             </div>
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
-                                <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; flex-shrink: 0;">
+                                <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; text-align: center; margin-bottom: 5px;">{st_txt}</span>
                                 {img_html}
+                            </div>
                         </div>
                         <hr style="border-top: 1px solid #333; margin: 5px 0 10px 0;">
                         """
