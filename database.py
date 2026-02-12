@@ -14,6 +14,7 @@ OBS_COL = "observacoes"
 LOCAL_COL = "local_de_uso"
 RESPONSAVEL_COL = "responsavel"
 VALOR_COL = "valor"
+FOTO_COL = "foto_item"
 
 def get_db_connection():
     try:
@@ -27,10 +28,9 @@ def get_db_connection():
         st.error("ERRO GRAVE NA CONEXÃO COM O SUPABASE. Verifique os secrets.")
         st.stop()
 
-def upload_to_storage(file_data, file_name, file_type='application/pdf'):
+def upload_to_storage(file_data, file_name, bucket_name="notas-fiscais", file_type='application/pdf'):
     conn = get_db_connection()
-    try:
-        bucket_name = "notas-fiscais"
+    try:=
         conn.storage.from_(bucket_name).upload(
             file=file_data,
             path=file_name,
@@ -38,7 +38,7 @@ def upload_to_storage(file_data, file_name, file_type='application/pdf'):
         )
         return conn.storage.from_(bucket_name).get_public_url(file_name)
     except Exception as e:
-        st.error(f"Erro no upload para o Supabase Storage: {e}")
+        st.error(f"Erro no upload para o bucket {bucket_name}: {e}")
         return None
 
 @st.cache_data(ttl=30) 
