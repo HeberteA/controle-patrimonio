@@ -13,6 +13,8 @@ import utils
 def modal_editar_patrimonio(item_series, lista_status):
     st.write(f"Editando: **{item_series[db.NOME_COL]}**")
     with st.form("form_edit_patr_modal"):
+        if item_series.get(db.FOTO_COL):
+            st.image(item_series[db.FOTO_COL], width=150, caption="Foto Atual")
         c1, c2 = st.columns(2)
         with c1:
             novo_nome = st.text_input("Nome", value=item_series[db.NOME_COL])
@@ -30,13 +32,13 @@ def modal_editar_patrimonio(item_series, lista_status):
         if item_series.get(db.FOTO_COL):
             st.image(item_series[db.FOTO_COL], width=200, caption="Foto Atual")
         
-        nova_foto_file = st.file_uploader("Substituir Foto", type=["jpg", "png"])
+        nova_foto_file = st.file_uploader("Substituir Foto", type=["jpg", "png", "jpeg"])
         st.write("---")
         
         if st.form_submit_button("Salvar"):
             try:
                 conn = db.get_db_connection()
-                conn.table("patrimonio").update({
+                update_dict = {
                     db.NOME_COL: novo_nome,
                     db.TOMBAMENTO_COL: novo_tombamento,
                     db.VALOR_COL: novo_valor,
@@ -46,16 +48,18 @@ def modal_editar_patrimonio(item_series, lista_status):
                     db.NF_NUM_COL: nova_nf,
                     db.ESPEC_COL: novas_specs,
                     db.OBS_COL: novas_obs
-                }).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
+                }
                 if nova_foto_file:
                     img_name = f"EDIT_{int(item_series[db.ID_COL])}_{datetime.now().strftime('%H%M%S')}.jpg"
+                    
                     url_foto = db.upload_foto_patrimonio(
                         nova_foto_file.getvalue(), 
                         img_name, 
                         nova_foto_file.type
                     )
                     
-                    update_dict[db.FOTO_COL] = url_foto
+                    if url_foto:
+                        update_dict[db.FOTO_COL] = url_foto
                 conn.table("patrimonio").update(update_dict).eq(db.ID_COL, int(item_series[db.ID_COL])).execute()
                 st.success("Patrimônio atualizado!")
                 time.sleep(1)
