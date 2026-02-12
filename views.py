@@ -523,7 +523,6 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             <div style="flex-grow: 1;">
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
                                 <div style="color: #E37026; font-weight: bold; font-size: 0.9em;">TOMBAMENTO: {row[db.TOMBAMENTO_COL]}</div>
-                                
                                 <div style="margin-top: 15px; display:flex; flex-wrap: wrap; gap: 20px; color: #CCC; font-size: 0.9em;">
                                     <div style="min-width: 120px;"><b style="color: #888; display:block;">OBRA</b>{row[db.OBRA_COL]}</div>
                                     <div style="min-width: 120px;"><b style="color: #888; display:block;">LOCAL</b>{row[db.LOCAL_COL]}</div>
@@ -534,7 +533,6 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                     {espec_safe}
                                 </div>
                             </div>
-                        
                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
                                 <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold;">{st_txt}</span>
                                 <img src="{img_url}" style="width: 130px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333;">
