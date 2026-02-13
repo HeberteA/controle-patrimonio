@@ -526,9 +526,8 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                             img_html = f"""
                             <img src="{url_foto}" 
                                  onerror="this.style.display='none'" 
-                                 style="width: 300px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #444; margin-top: 8px;">
+                                 style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #444; margin-top: 8px;">
                             """
-                        html_content = f"""
                         <div style="margin-bottom: 10px; display: flex; justify-content: space-between; gap: 15px;">
                             <div style="flex-grow: 1;">
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
