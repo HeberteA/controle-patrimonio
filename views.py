@@ -517,7 +517,7 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         bg_status = f"{cor_status}22" 
                         valor_fmt = f"R$ {row[db.VALOR_COL]:,.2f}"
                         nome_safe = str(row[db.NOME_COL]).replace('"', '&quot;')
-                        espec_safe = str(row[db.ESPEC_COL])[:90] + "..." if row[db.ESPEC_COL] else ""
+                        espec_safe = str(row[db.ESPEC_COL])[:200] + "..." if row[db.ESPEC_COL] else ""
                         
                         st.header("", divider="orange")
                         url_foto = row.get(db.FOTO_COL)
