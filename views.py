@@ -520,13 +520,21 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                         espec_safe = str(row[db.ESPEC_COL])[:200] + "..." if row[db.ESPEC_COL] else ""
                         
                         st.header("", divider="orange")
+                        #url_foto = row.get(db.FOTO_COL)
+                        #if url_foto and str(url_foto).strip() != "" and str(url_foto) != "None":
+                            #img_html = f'<img src="{url_foto}" style="width: 200px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">'
+                        #else:
+                            #img_html = ""
+
                         url_foto = row.get(db.FOTO_COL)
-                        if url_foto and str(url_foto).strip() != "" and str(url_foto) != "None":
-                            img_html = f'<img src="{url_foto}" style="width: 200px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #333; margin-top: 10px;">'
-                        else:
-                            img_html = ""
-                            
-                        html_card = f"""
+                        img_html = ""
+                        if url_foto and str(url_foto).strip() not in ["", "None", "none"]:
+                            img_html = f"""
+                            <img src="{url_foto}" 
+                                 onerror="this.style.display='none'" 
+                                 style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #444; margin-top: 8px;">
+                            """
+                        html_content = f"""
                         <div style="margin-bottom: 10px; display: flex; justify-content: space-between; gap: 15px;">
                             <div style="flex-grow: 1;">
                                 <h3 style="margin:0; color: white; font-size: 1.3em;">{nome_safe}</h3>
