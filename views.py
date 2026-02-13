@@ -537,14 +537,10 @@ def pagina_inventario_unificado(is_admin, dados_patrimonio, dados_locacoes, list
                                     <div style="min-width: 100px;"><b style="color: #888; display:block;">RESPONSÁVEL</b>{row[db.RESPONSAVEL_COL]}</div>
                                     <div><b style="color: #888; display:block;">VALOR</b><span style="color: #E37026;">{valor_fmt}</span></div>
                                 </div>
-                                <div style="margin-top: 10px; font-size: 0.8em; color: #888; font-style: italic;">
-                                    {espec_safe}
-                                </div>
+                                <div style="margin-top: 10px; font-size: 0.8em; color: #888; font-style: italic;">{espec_safe}</div>
                             </div>
                             <div style="display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; flex-shrink: 0;">
-                                <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; text-align: center; margin-bottom: 5px;">{st_txt}</span>
-                                {img_html}
-                        </div>
+                                <span style="background-color: {bg_status}; color: {cor_status}; padding: 4px 12px; border-radius: 4px; font-size: 0.75em; border: 1px solid {cor_status}; font-weight: bold; text-align: center; margin-bottom: 5px;">{st_txt}</span>{img_html}</div>
                         <hr style="border-top: 1px solid #333; margin: 5px 0 10px 0;">
                         """
                         st.markdown(html_content, unsafe_allow_html=True)
